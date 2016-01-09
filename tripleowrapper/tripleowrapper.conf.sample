@@ -1,0 +1,11 @@
+---
+provisioner:
+    type: openstack
+    instance_name_prefix: my-tripleowrapper-vm
+    image: CentOS 7 (1510) x86_64
+    flavor: m1.small
+    network: private
+    keypair: yassine
+    security-groups:
+        - ssh
+        - rhos-mirror-user
