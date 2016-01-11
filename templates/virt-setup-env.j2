@@ -1,0 +1,30 @@
+export PATH='/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/home/stack/bin'
+
+export DIB_LOCAL_IMAGE={{ guest_image_name }}
+export DIB_YUM_REPO_CONF="{{dib_dir}}/rhos-release-8-director.repo {{dib_dir}}/rhos-release-8.repo {{dib_dir}}/redhat.repo"
+export USE_DELOREAN_TRUNK=0
+export RHOS=1
+export NODE_DIST=rhel7
+
+{% if rhsm.user is defined %}
+export NODE_DIST=rhel7
+export REG_METHOD=portal
+export REG_USER="{{ rhsm.user }}"
+export REG_PASSWORD="{{ rhsm.password }}"
+export REG_POOL_ID=""
+export REG_REPOS="rhel-7-server-rpms rhel-7-server-extras-rpms rhel-ha-for-rhel-7-server-rpms rhel-7-server-optional-rpms rhel-7-server-openstack-7.0-rpms"
+{%endif %}
+
+export NODE_COUNT={{ node.count | default('3') }}
+
+{% if node.mem is defined %}
+export NODE_MEM={{ node.mem | default('4096') }}
+{%endif %}
+
+{% if node.cpu is defined %}
+export NODE_CPU={{ node.cpu | default('1') }}
+{%endif %}
+
+{% if undercloud_node_mem is defined %}
+export UNDERCLOUD_NODE_MEM={{ undercloud_node_mem | default('4096') }}
+{%endif %}

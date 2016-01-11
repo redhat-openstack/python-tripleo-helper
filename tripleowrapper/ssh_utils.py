@@ -33,8 +33,7 @@ def build_ssh_client(hostname, username, private_key):
         try:
             ssh_client.connect(hostname=hostname, username=username,
                                key_filename=private_key, allow_agent=True)
-        except (ssh_exception.SSHException,
-                ssh_exception.NoValidConnectionsError):
+        except (ssh_exception.SSHException, OSError):
             LOG.warn("waiting for ssh service on '%s'" % hostname)
             time.sleep(1)
         else:

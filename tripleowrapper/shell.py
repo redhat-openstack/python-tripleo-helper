@@ -20,8 +20,10 @@ import yaml
 
 import datetime
 import logging
+import os
 import sys
 
+import tripleowrapper.host0
 from tripleowrapper.provisioners.openstack import os_libvirt
 from tripleowrapper.provisioners.openstack import utils as os_utils
 from tripleowrapper import ssh_utils
@@ -113,8 +115,23 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
             ssh_client.close()
         else:
             LOG.error("instance '%s' failed" % instance_name)
+            exit(1)
+
+        host0 = tripleowrapper.host0.Host0(floating_ip)
+        host0.enable_nosync()
+        host0.set_rhsn_credentials(
+            config['rhsm']['login'],
+            config['rhsm'].get('password', os.environ['RHN_PW']),
+            config['rhsm']['pool_id'])
+        host0.enable_repositories(provisioner['repositories'])
+        undercloud = host0.instack_virt_setup(
+            provisioner['undercloud']['guest_image_path'],
+            provisioner['undercloud']['guest_image_checksum'])
+        print(host0)
+        print(undercloud)
     else:
         LOG.error("unknown provisioner '%s'" % provisioner['type'])
+
 
 # This is for setuptools entry point.
 main = cli
