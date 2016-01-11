@@ -20,7 +20,7 @@
 First edit the configuration file 'tripleowrapper.conf', there is a
 sample file in the root directory. Then run the command.
 
-    $ chainsaw --config-path /path/to/tripleowrapper.conf
+    $ chainsaw --config-file /path/to/tripleowrapper.conf
 
 ## Run unit tests
 
