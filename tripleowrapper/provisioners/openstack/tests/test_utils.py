@@ -17,7 +17,7 @@
 from tripleowrapper.provisioners.openstack import utils
 
 import mock
-from novaclient.v2 import client as nova_client
+from novaclient import client as nova_client
 
 
 def test_get_image_id(nova_api):
@@ -56,10 +56,11 @@ def test_get_network_id(nova_api):
     assert None == network_id
 
 
-@mock.patch('novaclient.v2.client.Client', spec=nova_client.Client)
+@mock.patch('novaclient.client.Client', spec=nova_client.Client)
 def test_build_nova_api(mock_nova_client):
     utils.build_nova_api('http://auth_url', 'username', 'password', 'tenant')
-    mock_nova_client.assert_called_with(auth_url='http://auth_url',
+    mock_nova_client.assert_called_with(2,
+                                        auth_url='http://auth_url',
                                         username='username',
                                         api_key='password',
                                         project_id='tenant')

@@ -14,7 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from novaclient.v2 import client as nova_client
+from novaclient import client as nova_client
 
 
 def _get_id_by_attr(resources, attr, value):
@@ -26,6 +26,7 @@ def _get_id_by_attr(resources, attr, value):
 
 def build_nova_api(auth_url, username, password, tenant):
     return nova_client.Client(
+        2,
         auth_url=auth_url,
         username=username,
         api_key=password,
