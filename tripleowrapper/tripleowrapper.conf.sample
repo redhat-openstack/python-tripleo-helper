@@ -9,3 +9,6 @@ provisioner:
     security-groups:
         - ssh
         - rhos-mirror-user
+ssh:
+    username: centos
+    private_key: /home/yassine/.ssh/id_rsa

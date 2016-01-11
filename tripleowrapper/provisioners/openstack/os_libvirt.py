@@ -14,8 +14,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
+import logging
 import time
+
+LOG = logging.getLogger('__chainsaw__')
 
 
 def build_openstack_instance(nova_api, name, image, flavor, key_name, nics):
@@ -28,12 +30,12 @@ def build_openstack_instance(nova_api, name, image, flavor, key_name, nics):
 
     # TODO(yassine): convert to a wait() function
     while True:
-        print("* VM status %s" % instance.status)
+        LOG.info("* instance '%s' status %s" % (name, instance.status))
         if instance.status == 'ERROR':
-            print("Boot VM '%s' failed." % name)
+            LOG.error("boot instance '%s' failed" % name)
             return None
         elif instance.status == 'ACTIVE':
-            print("Boot VM '%s' successfully." % name)
+            LOG.info("boot  '%s' successfully" % name)
             return instance
         time.sleep(5)
         instance = nova_api.servers.get(instance.id)

@@ -19,9 +19,41 @@ import click
 import yaml
 
 import datetime
+import logging
+import sys
 
 from tripleowrapper.provisioners.openstack import os_libvirt
 from tripleowrapper.provisioners.openstack import utils as os_utils
+from tripleowrapper import ssh_utils
+
+LOG = logging.getLogger('__chainsaw__')
+
+
+def setup_logging():
+    logger = logging.getLogger('__chainsaw__')
+    logger.setLevel(logging.DEBUG)
+    stream_handler = logging.StreamHandler(stream=sys.stdout)
+    stream_handler.setLevel(logging.DEBUG)
+    try:
+        import colorlog
+        formatter = colorlog.ColoredFormatter(
+            "%(log_color)s%(asctime)s :: %(levelname)s :: %(message)s",
+            datefmt=None,
+            reset=True,
+            log_colors={
+                'DEBUG': 'cyan',
+                'INFO': 'green',
+                'WARNING': 'yellow',
+                'ERROR': 'red',
+                'CRITICAL': 'red'
+            }
+        )
+        stream_handler.setFormatter(formatter)
+    except ImportError:
+        pass
+    logger.addHandler(stream_handler)
+
+setup_logging()
 
 
 @click.command()
@@ -37,10 +69,10 @@ from tripleowrapper.provisioners.openstack import utils as os_utils
               help="Chainsaw path configuration file.")
 def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
     config = yaml.load(config_file)
-
     provisioner = config['provisioner']
+    ssh = config['ssh']
     if provisioner['type'] == 'openstack':
-        print("* Using 'openstack' provisioner.")
+        LOG.info("using 'openstack' provisioner")
         nova_api = os_utils.build_nova_api(os_auth_url, os_username,
                                            os_password, os_tenant_name)
 
@@ -53,7 +85,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
 
         instance_name = "%s-%s" % (provisioner['instance_name_prefix'],
                                    str(datetime.datetime.utcnow()))
-        print("* Building instance %s\n" % instance_name)
+        LOG.info("building instance '%s'" % instance_name)
 
         os_instance = os_libvirt.build_openstack_instance(
             nova_api,
@@ -65,17 +97,24 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
 
         if os_instance:
             floating_ip = os_utils.add_a_floating_ip(nova_api, os_instance)
-            print("* Added floating ip %s" % floating_ip)
+            LOG.info("add floating ip '%s'" % floating_ip)
             os_utils.add_security_groups(os_instance,
                                          provisioner['security-groups'])
-            print("* Added security groups %s" %
-                  provisioner['security-groups'])
-            print("* VM %s ready to use" % instance_name)
+            LOG.info("add security groups '%s'" %
+                     provisioner['security-groups'])
+            LOG.info("instance '%s' ready to use" % instance_name)
+            ssh_client = ssh_utils.build_ssh_client(floating_ip,
+                                                    ssh['username'],
+                                                    ssh['private_key'])
+            with ssh_client.get_transport() as transport:
+                channel = transport.open_session()
+                result, status = ssh_utils.run_cmd(channel, "uname -a")
+                LOG.info("* result '%s', status '%s'" % (result, status))
+            ssh_client.close()
         else:
-            print("* VM %s failed" % instance_name)
+            LOG.error("instance '%s' failed" % instance_name)
     else:
-        print("Unknown provisioner %s" % provisioner['type'])
-
+        LOG.error("unknown provisioner '%s'" % provisioner['type'])
 
 # This is for setuptools entry point.
 main = cli
