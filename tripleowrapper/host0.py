@@ -6,8 +6,8 @@ from jinja2 import FileSystemLoader
 
 
 class Host0(Server):
-    def __init__(self, ip):
-        Server.__init__(self, ip)
+    def __init__(self, ip, **kargs):
+        Server.__init__(self, ip, **kargs)
 
     def instack_virt_setup(self, guest_image_path, guest_image_md5sum):
         with utils.SSHSession(self.ip) as ssh:
@@ -58,4 +58,7 @@ class Host0(Server):
             ssh.put_content(virt_setup_env, 'virt-setup-env')
             ssh.run('source virt-setup-env; instack-virt-setup')
             instack_ip = ssh.run('/sbin/ip n | grep $(tripleo get-vm-mac instack) | awk \'{print $1;}\'')[0]
-            print(instack_ip)
+            undercloud = Undercloud(instack_ip, via_ip=self.ip)
+            with utils.SSHSession(undercloud.ip, via_ip=undercloud.via_ip) as undercloud_ssh:
+                ssh.run('')
+                return undercloud

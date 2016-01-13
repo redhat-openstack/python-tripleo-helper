@@ -1,16 +1,30 @@
 import paramiko
 
+import io
+import logging
+import select
 import time
+
+LOG = logging.getLogger('__chainsaw__')
 
 
 class SSHSession(object):
-    def __init__(self, ip, cloud_user='root'):
+    def __init__(self, ip, user='root', via_ip=None, key_filename=None):
+        self.via_ip = via_ip
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        print('via_ip %s' % via_ip)
+        print('ip %s' % ip)
+        connect_to = via_ip if via_ip else ip
         for i in range(60):
             try:
-                client.connect(ip, port=22, username=cloud_user, allow_agent=True)
+                client.connect(
+                    connect_to,
+                    username=user,
+                    allow_agent=True,
+                    key_filename=None)
             except (OSError, ConnectionResetError):
                 print('SSH: Waiting for %s' % ip)
                 time.sleep(1)
@@ -18,25 +32,40 @@ class SSHSession(object):
                 break
         self.client = client
 
+
+    def get_channel(self):
+        if self.via_ip:
+            channel = self.via_client.get_transport().open_channel(
+            'direct-tcpip',
+            (self.ip, 22),
+            (self.via_ip, 0))
+        transport = self.client.get_transport()
+        channel = transport.open_session()
+
+        return channel
+
+
     def __enter__(self):
         return self
 
     def run(self, cmd):
         transport = self.client.get_transport()
-        ch = transport.open_session()
-        ch.get_pty()
-        ch.set_combine_stderr(True)
-        ch.exec_command(cmd)
-        buf = ''
+        ssh_channel = transport.open_session()
+        cmd_output = io.StringIO()
+        ssh_channel.set_combine_stderr(True)
+        ssh_channel.get_pty()
+
+        LOG.info("run command '%s'" % cmd)
+        ssh_channel.exec_command(cmd)
+
         while True:
-            new = ch.recv(1024).decode(encoding='UTF-8')
-            print(new, end="", flush=True)  # flake8: noqa
-            buf += new
-            if new == '' and ch.exit_status_ready():
+            if ssh_channel.exit_status_ready():
                 break
-            time.sleep(0.1)
-        retcode = ch.recv_exit_status()
-        return (buf, retcode)
+            rl, _, _ = select.select([ssh_channel], [], [], 30)
+            if rl:
+                received = ssh_channel.recv(1024).decode('UTF-8', 'ignore')
+                cmd_output.write(received)
+        return cmd_output.getvalue(), ssh_channel.exit_status
 
     def put(self, source, dest):
         transport = self.client.get_transport()
