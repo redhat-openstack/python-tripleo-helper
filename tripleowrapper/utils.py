@@ -35,8 +35,7 @@ class SSHSession(object):
                 time.sleep(1)
             else:
                 self.client = client
-                return
-        LOG.error('Failed to connect to %s' % ip)
+        self.transport = self.get_transport()
 
 
     def load_private_key(self, priv_key):
@@ -63,8 +62,7 @@ class SSHSession(object):
         return self
 
     def run(self, cmd):
-        transport = self.get_transport()
-        ssh_channel = transport.open_session()
+        ssh_channel = self.transport.open_session()
         cmd_output = io.StringIO()
         ssh_channel.set_combine_stderr(True)
         ssh_channel.get_pty()
@@ -83,16 +81,15 @@ class SSHSession(object):
         return cmd_output.getvalue(), ssh_channel.exit_status
 
     def put(self, source, dest):
-        transport = self.get_transport()
-        sftp = paramiko.SFTPClient.from_transport(transport)
+        sftp = paramiko.SFTPClient.from_transport(selftransport)
         sftp.put(source, dest)
 
     def put_content(self, content, dest, mode='w'):
-        transport = self.get_transport()
-        sftp = paramiko.SFTPClient.from_transport(transport)
+        sftp = paramiko.SFTPClient.from_transport(self.transport)
         file = sftp.file(dest, mode, -1)
         file.write(content)
         file.flush()
 
     def __exit__(self, exc_type, exc_value, traceback):
+        self.transport.close()
         self.client.close()
