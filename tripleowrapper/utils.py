@@ -10,7 +10,12 @@ LOG = logging.getLogger('__chainsaw__')
 
 class SSHSession(object):
     def __init__(self, ip, user='root', via_ip=None, key_filename=None):
+        self.ip = ip
+        self.user = user
         self.via_ip = via_ip
+
+        self.load_private_key(key_filename)
+
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -29,33 +34,42 @@ class SSHSession(object):
                 print('SSH: Waiting for %s' % ip)
                 time.sleep(1)
             else:
-                break
-        self.client = client
+                self.client = client
+                return
+        LOG.error('Failed to connect to %s' % ip)
 
 
-    def get_channel(self):
+    def load_private_key(self, priv_key):
+        """Register the SSH private key."""
+        with open(priv_key) as fd:
+            self.private_key = paramiko.RSAKey.from_private_key(fd)
+
+    def get_transport(self):
         if self.via_ip:
-            channel = self.via_client.get_transport().open_channel(
+            channel = self.client.get_transport().open_channel(
             'direct-tcpip',
             (self.ip, 22),
             (self.via_ip, 0))
-        transport = self.client.get_transport()
-        channel = transport.open_session()
-
-        return channel
+            transport = paramiko.Transport(channel)
+            transport.start_client()
+            transport.auth_publickey(self.user, self.private_key)
+        else:
+            transport = self.client.get_transport()
+        transport.set_keepalive(10)
+        return transport
 
 
     def __enter__(self):
         return self
 
     def run(self, cmd):
-        transport = self.client.get_transport()
+        transport = self.get_transport()
         ssh_channel = transport.open_session()
         cmd_output = io.StringIO()
         ssh_channel.set_combine_stderr(True)
         ssh_channel.get_pty()
 
-        LOG.info("run command '%s'" % cmd)
+        LOG.info("(%s)run '%s'" % (self.user, cmd))
         ssh_channel.exec_command(cmd)
 
         while True:
@@ -64,16 +78,17 @@ class SSHSession(object):
             rl, _, _ = select.select([ssh_channel], [], [], 30)
             if rl:
                 received = ssh_channel.recv(1024).decode('UTF-8', 'ignore')
+                LOG.debug(received)
                 cmd_output.write(received)
         return cmd_output.getvalue(), ssh_channel.exit_status
 
     def put(self, source, dest):
-        transport = self.client.get_transport()
+        transport = self.get_transport()
         sftp = paramiko.SFTPClient.from_transport(transport)
         sftp.put(source, dest)
 
     def put_content(self, content, dest, mode='w'):
-        transport = self.client.get_transport()
+        transport = self.get_transport()
         sftp = paramiko.SFTPClient.from_transport(transport)
         file = sftp.file(dest, mode, -1)
         file.write(content)

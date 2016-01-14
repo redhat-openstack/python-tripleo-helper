@@ -23,10 +23,10 @@ import logging
 import os
 import sys
 
-import tripleowrapper.host0
+from tripleowrapper.host0 import Host0
+from tripleowrapper.undercloud import Undercloud
 from tripleowrapper.provisioners.openstack import os_libvirt
 from tripleowrapper.provisioners.openstack import utils as os_utils
-from tripleowrapper import ssh_utils
 
 LOG = logging.getLogger('__chainsaw__')
 
@@ -72,6 +72,8 @@ setup_logging()
 def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
     config = yaml.load(config_file)
     provisioner = config['provisioner']
+    overcloud = config['overcloud']
+    undercloud = config['undercloud']
     ssh = config['ssh']
     if provisioner['type'] == 'openstack':
         LOG.info("using 'openstack' provisioner")
@@ -98,37 +100,41 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
             nics)
 
         if os_instance:
-            floating_ip = os_utils.add_a_floating_ip(nova_api, os_instance)
-            LOG.info("add floating ip '%s'" % floating_ip)
+            host0_ip = os_utils.add_a_floating_ip(nova_api, os_instance)
+            LOG.info("add floating ip '%s'" % host0_ip)
             os_utils.add_security_groups(os_instance,
                                          provisioner['security-groups'])
             LOG.info("add security groups '%s'" %
                      provisioner['security-groups'])
             LOG.info("instance '%s' ready to use" % instance_name)
-            ssh_client = ssh_utils.build_ssh_client(floating_ip,
-                                                    ssh['username'],
-                                                    ssh['private_key'])
-            with ssh_client.get_transport() as transport:
-                channel = transport.open_session()
-                result, status = ssh_utils.run_cmd(channel, "uname -a")
-                LOG.info("* result '%s', status '%s'" % (result, status))
-            ssh_client.close()
         else:
             LOG.error("instance '%s' failed" % instance_name)
             exit(1)
 
-        host0 = tripleowrapper.host0.Host0(floating_ip)
-        host0.enable_nosync()
+        host0 = Host0(host0_ip, key_filename=ssh['private_key'])
         host0.set_rhsn_credentials(
             config['rhsm']['login'],
             config['rhsm'].get('password', os.environ['RHN_PW']),
             config['rhsm']['pool_id'])
-        host0.enable_repositories(provisioner['repositories'])
-        undercloud = host0.instack_virt_setup(
-            provisioner['undercloud']['guest_image_path'],
-            provisioner['undercloud']['guest_image_checksum'])
-        print(host0)
-        print(undercloud)
+        host0.enable_repositories(overcloud['repositories'])
+        host0.enable_nosync()
+        host0.create_stack_user()
+        host0.fetch_image(path=undercloud['guest_image_path'], checksum=undercloud['guest_image_checksum'], dest='/home/stack/guest_image.qcow2')
+
+        undercloud = host0.instack_virt_setup()
+        undercloud.set_rhsn_credentials(
+            config['rhsm']['login'],
+            config['rhsm'].get('password', os.environ['RHN_PW']),
+            config['rhsm']['pool_id'])
+        undercloud.enable_repositories(overcloud['repositories'])
+        undercloud.enable_nosync()
+        undercloud.create_stack_user()
+        undercloud.install_base_packages()
+        undercloud.clean_system()
+        undercloud.update_packages()
+        undercloud.install_osp()
+        undercloud.deploy(overcloud)
+
     else:
         LOG.error("unknown provisioner '%s'" % provisioner['type'])
 
