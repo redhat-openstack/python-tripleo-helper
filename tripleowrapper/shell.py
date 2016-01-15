@@ -58,23 +58,8 @@ def setup_logging():
 setup_logging()
 
 
-@click.command()
-@click.option('--os-auth-url', envvar='OS_AUTH_URL', required=True,
-              help="Keystone auth url.")
-@click.option('--os-username', envvar='OS_USERNAME', required=True,
-              help="Openstack username account.")
-@click.option('--os-password', envvar='OS_PASSWORD', required=True,
-              help="Openstack password account.")
-@click.option('--os-tenant-name', envvar='OS_TENANT_NAME', required=True,
-              help="Openstack tenant name.")
-@click.option('--config-file', required=True, type=click.File('rb'),
-              help="Chainsaw path configuration file.")
-def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
-    config = yaml.load(config_file)
+def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
     provisioner = config['provisioner']
-    overcloud = config['overcloud']
-    undercloud = config['undercloud']
-    ssh = config['ssh']
     if provisioner['type'] == 'openstack':
         LOG.info("using 'openstack' provisioner")
         nova_api = os_utils.build_nova_api(os_auth_url, os_username,
@@ -111,32 +96,74 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, config_file):
             LOG.error("instance '%s' failed" % instance_name)
             exit(1)
 
-        host0 = Host0(host0_ip, key_filename=ssh['private_key'])
+        host0 = Host0(host0_ip, key_filename=config['ssh']['private_key'])
         host0.set_rhsn_credentials(
             config['rhsm']['login'],
             config['rhsm'].get('password', os.environ['RHN_PW']),
             config['rhsm']['pool_id'])
-        host0.enable_repositories(overcloud['repositories'])
+        host0.enable_repositories(provisioner['repositories'])
         host0.enable_nosync()
         host0.create_stack_user()
-        host0.fetch_image(path=undercloud['guest_image_path'], checksum=undercloud['guest_image_checksum'], dest='/home/stack/guest_image.qcow2')
+    return host0
 
-        undercloud = host0.instack_virt_setup()
-        undercloud.set_rhsn_credentials(
-            config['rhsm']['login'],
-            config['rhsm'].get('password', os.environ['RHN_PW']),
-            config['rhsm']['pool_id'])
-        undercloud.enable_repositories(overcloud['repositories'])
-        undercloud.enable_nosync()
-        undercloud.create_stack_user()
-        undercloud.install_base_packages()
-        undercloud.clean_system()
-        undercloud.update_packages()
-        undercloud.install_osp()
-        undercloud.deploy(overcloud)
 
+def deploy_undercloud(host0, config):
+    undercloud = host0.instack_virt_setup(
+        config['undercloud']['guest_image_path'],
+        config['undercloud']['guest_image_checksum'])
+    undercloud.set_rhsn_credentials(
+        config['rhsm']['login'],
+        config['rhsm'].get('password', os.environ['RHN_PW']),
+        config['rhsm']['pool_id'])
+    undercloud.enable_repositories(config['undercloud']['repositories'])
+    undercloud.enable_nosync()
+    undercloud.create_stack_user()
+    undercloud.install_base_packages()
+    undercloud.clean_system()
+    undercloud.update_packages()
+    undercloud.install_osp()
+    return undercloud
+
+@click.command()
+@click.option('--os-auth-url', envvar='OS_AUTH_URL', required=True,
+              help="Keystone auth url.")
+@click.option('--os-username', envvar='OS_USERNAME', required=True,
+              help="Openstack username account.")
+@click.option('--os-password', envvar='OS_PASSWORD', required=True,
+              help="Openstack password account.")
+@click.option('--os-tenant-name', envvar='OS_TENANT_NAME', required=True,
+              help="Openstack tenant name.")
+@click.option('--host0_ip', required=False,
+              help="IP of a host0 to reuse.")
+@click.option('--undercloud_ip', required=False,
+              help="IP of a undercloud to reuse.")
+@click.option('--config-file', required=True, type=click.File('rb'),
+              help="Chainsaw path configuration file.")
+def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercloud_ip, config_file):
+    config = yaml.load(config_file)
+    overcloud = config['overcloud']
+    undercloud = config['undercloud']
+    ssh = config['ssh']
+
+    print('host0')
+    if host0_ip:
+        host0 = Host0(host0_ip, key_filename=ssh['private_key'])
     else:
-        LOG.error("unknown provisioner '%s'" % provisioner['type'])
+        host0 = deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config)
+
+    print('undercloud')
+    if undercloud_ip:
+        undercloud = Undercloud(undercloud_ip, via_ip=host0.ip, key_filename=ssh['private_key'])
+    else:
+        undercloud = deploy_undercloud(host0, config)
+
+
+    undercloud.deploy(
+        guest_image_path=overcloud['guest_image_path'],
+        guest_image_checksum=overcloud['guest_image_checksum'],
+        files=overcloud['files'])
+    undercloud.start_overcloud()
+
 
 
 # This is for setuptools entry point.

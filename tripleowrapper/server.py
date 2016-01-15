@@ -13,6 +13,7 @@ class Server(object):
         self._rhsm_status = None
         self.key_filename=key_filename
         self.ssh_session = {}
+        self._run_with_stackrc = False
 
         self.enable_root_user()
 
@@ -37,7 +38,9 @@ class Server(object):
                 self.ip, user, via_ip=self.via_ip, key_filename=self.key_filename)
         return self.ssh_session[user]
 
-    def run(self, cmd, user='root'):
+    def run(self, cmd, user='root', stackrc=False):
+        if stackrc:
+            cmd = 'source stackrc; ' + cmd
         ssh_session = self.get_ssh_session(user)
         return ssh_session.run(cmd)
 
@@ -117,3 +120,12 @@ class Server(object):
 
     def install_osp(self):
         self.run('yum install -y yum-plugin-priorities python-tripleoclient python-rdomanager-oscplugin')
+
+
+    def set_selinux(self, state):
+        allowed_states = ('enforcing', 'permissive', 'disabled')
+        if state not in allowed_states:
+            raise Exception
+        content = 'SELINUX={state}\nSELINUXTYPE=targeted\n'
+        self.run('setenforce ' + state)
+        self.put_content(content, '/etc/sysconfig/selinux')

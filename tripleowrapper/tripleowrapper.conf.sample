@@ -3,17 +3,6 @@ rhsm:
     login: user_name
     password: pw
     pool_id: 8frdgrdgfdr
-provisioner:
-    type: openstack
-    instance_name_prefix: goneri
-#    image: CentOS 7 (1510) x86_64
-    image: RHEL 7.2 x86_64
-    flavor: m1.hypervisor
-    network: private
-    keypair: DCI
-    security-groups:
-        - ssh
-        - rhos-mirror-user
 repositories: &DEFAULT_REPOSITORIES
     - {type: rhsm_channel, name: rhel-7-server-rpms}
     - {type: rhsm_channel, name: rhel-7-server-optional-rpms}
@@ -34,6 +23,18 @@ repositories: &DEFAULT_REPOSITORIES
           gpgcheck=0
           enabled=1
       dest: /etc/yum.repos.d/rhos-release-8-director.repo
+provisioner:
+    type: openstack
+    instance_name_prefix: goneri
+#    image: CentOS 7 (1510) x86_64
+    image: RHEL 7.2 x86_64
+    flavor: m1.hypervisor
+    network: private
+    keypair: DCI
+    security-groups:
+        - ssh
+        - rhos-mirror-user
+    repositories: *DEFAULT_REPOSITORIES
 undercloud:
     repositories: *DEFAULT_REPOSITORIES
     guest_image_path: http://192.168.1.2/brewroot/packages/rhel-guest-image/7.2/20151102.0/images/rhel-guest-image-7.2-20151102.0.x86_64.qcow2
@@ -41,9 +42,7 @@ undercloud:
 
 ssh:
     private_key: /home/goneri/.ssh/DCI/id_rsa
-
 overcloud:
-    repositories: *DEFAULT_REPOSITORIES
     files:
         overcloud-full:
             path: http://192.168.1.2/mburns/8.0/2015-12-03.1/images/overcloud-full.tar

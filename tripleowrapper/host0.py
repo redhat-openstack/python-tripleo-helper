@@ -9,13 +9,17 @@ class Host0(Server):
     def __init__(self, ip, **kargs):
         Server.__init__(self, ip, **kargs)
 
-    def instack_virt_setup(self):
+
+    def instack_virt_setup(self, guest_image_path, guest_image_checksum):
         self.run('yum install -y libvirt-daemon-driver-nwfilter libvirt-client libvirt-daemon-config-network libvirt-daemon-driver-nodedev libvirt-daemon-kvm libvirt-python libvirt-daemon-config-nwfilter libvirt-glib libvirt-daemon libvirt-daemon-driver-storage libvirt libvirt-daemon-driver-network libvirt-devel libvirt-gobject libvirt-daemon-driver-secret libvirt-daemon-driver-qemu libvirt-daemon-driver-interface libguestfs-tools.noarch virt-install genisoimage openstack-tripleo libguestfs-tools instack-undercloud')
         self.run('sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf')
         self.run('systemctl start libvirtd')
         self.run('systemctl status libvirtd')
         self.run('mkdir -p /home/stack/DIB')
         self.run('find /etc/yum.repos.d/ -type f -exec cp -v {} /home/stack/DIB \;')
+
+        self.fetch_image(path=guest_image_path, checksum=guest_image_checksum, dest='/home/stack/guest_image.qcow2')
+        self.run("LIBGUESTFS_BACKEND=direct virt-customize -a /home/stack/guest_image.qcow2 --run-command 'echo MTU=\"1400\" >> /etc/sysconfig/network-scripts/ifcfg-eth0'")
 
         self.install_base_packages()
         self.clean_system()

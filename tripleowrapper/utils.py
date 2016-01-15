@@ -19,10 +19,9 @@ class SSHSession(object):
         client = paramiko.SSHClient()
         client.load_system_host_keys()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-        print('via_ip %s' % via_ip)
-        print('ip %s' % ip)
         connect_to = via_ip if via_ip else ip
+        LOG.debug('Connecting to {user}@{ip} (via_ip={via_ip})'.format(
+            user=user,ip=ip, via_ip=via_ip))
         for i in range(60):
             try:
                 client.connect(
@@ -30,12 +29,16 @@ class SSHSession(object):
                     username=user,
                     allow_agent=True,
                     key_filename=None)
-            except (OSError, ConnectionResetError):
+            # NOTE(Gonéri): TypeError is in the list because of
+            # https://github.com/paramiko/paramiko/issues/615
+            except (OSError, ConnectionResetError, TypeError):
                 print('SSH: Waiting for %s' % ip)
                 time.sleep(1)
             else:
                 self.client = client
+                break
         self.transport = self.get_transport()
+        LOG.debug('Connected')
 
 
     def load_private_key(self, priv_key):
