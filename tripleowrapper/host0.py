@@ -1,3 +1,19 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2016 Red Hat, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
 from tripleowrapper.server import Server
 from tripleowrapper.undercloud import Undercloud
 
@@ -6,10 +22,10 @@ from jinja2 import FileSystemLoader
 
 
 class Host0(Server):
-    def __init__(self, ip, **kargs):
-        Server.__init__(self, ip, **kargs)
+    def __init__(self, **kwargs):
+        Server.__init__(self, **kwargs)
 
-    def instack_virt_setup(self, guest_image_path, guest_image_checksum):
+    def deploy_hypervisor(self):
         self.run('yum install -y libvirt-daemon-driver-nwfilter libvirt-client libvirt-daemon-config-network libvirt-daemon-driver-nodedev libvirt-daemon-kvm libvirt-python libvirt-daemon-config-nwfilter libvirt-glib libvirt-daemon libvirt-daemon-driver-storage libvirt libvirt-daemon-driver-network libvirt-devel libvirt-gobject libvirt-daemon-driver-secret libvirt-daemon-driver-qemu libvirt-daemon-driver-interface libguestfs-tools.noarch virt-install genisoimage openstack-tripleo libguestfs-tools instack-undercloud')
         self.run('sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf')
         self.run('systemctl start libvirtd')
@@ -17,12 +33,16 @@ class Host0(Server):
         self.run('mkdir -p /home/stack/DIB')
         self.run('find /etc/yum.repos.d/ -type f -exec cp -v {} /home/stack/DIB \;')
 
-        self.fetch_image(path=guest_image_path, checksum=guest_image_checksum, dest='/home/stack/guest_image.qcow2')
-        self.run("LIBGUESTFS_BACKEND=direct virt-customize -a /home/stack/guest_image.qcow2 --run-command 'echo MTU=\"1400\" >> /etc/sysconfig/network-scripts/ifcfg-eth0'")
-
         self.install_base_packages()
         self.clean_system()
         self.update_packages()
+
+    def instack_virt_setup(self, guest_image_path, guest_image_checksum,
+                           rhsm_login=None, rhsm_password=None):
+
+        self.fetch_image(path=guest_image_path, checksum=guest_image_checksum, dest='/home/stack/guest_image.qcow2',
+                         user='stack')
+        self.run("LIBGUESTFS_BACKEND=direct virt-customize -a /home/stack/guest_image.qcow2 --run-command 'echo MTU=\"1400\" >> /etc/sysconfig/network-scripts/ifcfg-eth0'")
 
         env = Environment()
         env.loader = FileSystemLoader('templates')
@@ -38,15 +58,16 @@ class Host0(Server):
                 'undercloud_node_mem': 4096,
                 'guest_image_name': '/home/stack/guest_image.qcow2',
                 'rhsm': {
-                    'user': self.rhsm_login,
-                    'password': self.rhsm_password
+                    'user': rhsm_login,
+                    'password': rhsm_password
                 }})
-        self.put_content(virt_setup_env, 'virt-setup-env', user='stack')
+        self.create_file('virt-setup-env', virt_setup_env, user='stack')
         self.run('source virt-setup-env; instack-virt-setup', user='stack')
-        instack_ip = self.run(
-            '/sbin/ip n | grep $(tripleo get-vm-mac instack) | awk \'{print $1;}\'', user='stack')[0]
-        undercloud = Undercloud(instack_ip, via_ip=self.ip, key_filename=self.key_filename)
-        undercloud.run('cp /root/.ssh/authorized_keys /home/stack/.ssh/authorized_keys')
-        undercloud.run('chown stack:stack /home/stack/.ssh/authorized_keys')
-        undercloud.run('chmod 600 /home/stack/.ssh/authorized_keys')
+        undercloud_ip = self.run(
+            '/sbin/ip n | grep $(tripleo get-vm-mac instack) | awk \'{print $1;}\'',
+            user='stack')[0]
+        undercloud = Undercloud(undercloud_ip,
+                                host0_ip=self._hostname,
+                                user='root',
+                                key_filename=self._key_filename)
         return undercloud

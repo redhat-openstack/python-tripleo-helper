@@ -23,39 +23,14 @@ import logging
 import os
 import sys
 
-from tripleowrapper.host0 import Host0
+from tripleowrapper import host0
+from tripleowrapper import logger
 from tripleowrapper.provisioners.openstack import os_libvirt
 from tripleowrapper.provisioners.openstack import utils as os_utils
-from tripleowrapper.undercloud import Undercloud
+from tripleowrapper import undercloud
+
 
 LOG = logging.getLogger('__chainsaw__')
-
-
-def setup_logging():
-    logger = logging.getLogger('__chainsaw__')
-    logger.setLevel(logging.DEBUG)
-    stream_handler = logging.StreamHandler(stream=sys.stdout)
-    stream_handler.setLevel(logging.DEBUG)
-    try:
-        import colorlog
-        formatter = colorlog.ColoredFormatter(
-            "%(log_color)s%(asctime)s :: %(levelname)s :: %(message)s",
-            datefmt=None,
-            reset=True,
-            log_colors={
-                'DEBUG': 'cyan',
-                'INFO': 'green',
-                'WARNING': 'yellow',
-                'ERROR': 'red',
-                'CRITICAL': 'red'
-            }
-        )
-        stream_handler.setFormatter(formatter)
-    except ImportError:
-        pass
-    logger.addHandler(stream_handler)
-
-setup_logging()
 
 
 def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
@@ -66,7 +41,7 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
                                            os_password, os_tenant_name)
 
         image_id_to_boot_from = os_utils.get_image_id(nova_api,
-                                                      provisioner['image'])
+                                                      provisioner['image']['name'])
         flavor_id = os_utils.get_flavor_id(nova_api, provisioner['flavor'])
         keypair_id = os_utils.get_keypair_id(nova_api, provisioner['keypair'])
         network_id = os_utils.get_network_id(nova_api, provisioner['network'])
@@ -94,35 +69,40 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
             LOG.info("instance '%s' ready to use" % instance_name)
         else:
             LOG.error("instance '%s' failed" % instance_name)
-            exit(1)
+            sys.exit(1)
 
-        host0 = Host0(host0_ip, key_filename=config['ssh']['private_key'])
-        host0.set_rhsn_credentials(
+        host_0 = host0.Host0(hostname=host0_ip,
+                             user=config['provisioner']['image'].get('user'),
+                             key_filename=config['ssh']['private_key'])
+        host_0.rhsm_register(
             config['rhsm']['login'],
-            config['rhsm'].get('password', os.environ['RHN_PW']),
+            config['rhsm'].get('password', os.environ.get('RHN_PW')),
             config['rhsm']['pool_id'])
-        host0.enable_repositories(provisioner['repositories'])
-        host0.enable_nosync()
-        host0.create_stack_user()
-    return host0
+        host_0.enable_repositories(provisioner['repositories'])
+        host_0.install_nosync()
+        host_0.create_stack_user()
+        return host_0
 
 
 def deploy_undercloud(host0, config):
-    undercloud = host0.instack_virt_setup(
+    host0.deploy_hypervisor()
+    vm_undercloud = host0.instack_virt_setup(
         config['undercloud']['guest_image_path'],
-        config['undercloud']['guest_image_checksum'])
-    undercloud.set_rhsn_credentials(
+        config['undercloud']['guest_image_checksum'],
+        rhsm_login=config['rhsm']['login'],
+        rhsm_password=config['rhsm'].get('password', os.environ.get('RHN_PW')))
+    vm_undercloud.rhsm_register(
         config['rhsm']['login'],
-        config['rhsm'].get('password', os.environ['RHN_PW']),
+        config['rhsm'].get('password', os.environ.get('RHN_PW')),
         config['rhsm']['pool_id'])
-    undercloud.enable_repositories(config['undercloud']['repositories'])
-    undercloud.enable_nosync()
-    undercloud.create_stack_user()
-    undercloud.install_base_packages()
-    undercloud.clean_system()
-    undercloud.update_packages()
-    undercloud.install_osp()
-    return undercloud
+    vm_undercloud.enable_repositories(config['undercloud']['repositories'])
+    vm_undercloud.install_nosync()
+    vm_undercloud.create_stack_user()
+    vm_undercloud.install_base_packages()
+    vm_undercloud.clean_system()
+    vm_undercloud.update_packages()
+    vm_undercloud.install_osp()
+    return vm_undercloud
 
 
 @click.command()
@@ -134,34 +114,37 @@ def deploy_undercloud(host0, config):
               help="Openstack password account.")
 @click.option('--os-tenant-name', envvar='OS_TENANT_NAME', required=True,
               help="Openstack tenant name.")
-@click.option('--host0_ip', required=False,
-              help="IP of a host0 to reuse.")
-@click.option('--undercloud_ip', required=False,
-              help="IP of a undercloud to reuse.")
+@click.option('--host0-ip', required=False,
+              help="IP address of a host0 to reuse.")
+@click.option('--undercloud-ip', required=False,
+              help="IP address of an undercloud to reuse.")
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
 def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercloud_ip, config_file):
+    logger.setup_logging()
     config = yaml.load(config_file)
     overcloud = config['overcloud']
-    undercloud = config['undercloud']
     ssh = config['ssh']
 
     if host0_ip:
-        host0 = Host0(host0_ip, key_filename=ssh['private_key'])
+        host_0 = host0.Host0(hostname=host0_ip, key_filename=ssh['private_key'])
     else:
-        host0 = deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config)
+        host_0 = deploy_host0(os_auth_url, os_username, os_password,
+                              os_tenant_name, config)
 
     if undercloud_ip:
-        undercloud = Undercloud(undercloud_ip, via_ip=host0.ip, key_filename=ssh['private_key'])
+        vm_undercloud = undercloud.Undercloud(undercloud_ip,
+                                              user=config['provisioner']['image'].get('user'),
+                                              host0_ip=host0_ip,
+                                              key_filename=ssh['private_key'])
     else:
-        undercloud = deploy_undercloud(host0, config)
+        vm_undercloud = deploy_undercloud(host_0, config)
 
-    undercloud.deploy(
+    vm_undercloud.deploy(
         guest_image_path=overcloud['guest_image_path'],
         guest_image_checksum=overcloud['guest_image_checksum'],
         files=overcloud['files'])
-    undercloud.start_overcloud()
-
+    vm_undercloud.start_overcloud()
 
 # This is for setuptools entry point.
 main = cli

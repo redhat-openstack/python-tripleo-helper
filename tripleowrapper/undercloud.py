@@ -1,9 +1,29 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2016 Red Hat, Inc
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may
+# not use this file except in compliance with the License. You may obtain
+# a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+# License for the specific language governing permissions and limitations
+# under the License.
+
 from tripleowrapper.server import Server
 
 
 class Undercloud(Server):
-    def __init__(self, ip, **kargs):
-        Server.__init__(self, ip, **kargs)
+    def __init__(self, undercloud_ip, user, host0_ip, key_filename=None):
+        Server.__init__(self,
+                        hostname=host0_ip,
+                        user=user,
+                        redirect_to_host=undercloud_ip,
+                        key_filename=key_filename)
 
     def deploy(self, guest_image_path, guest_image_checksum, files):
         for name, file in files.items():
@@ -12,7 +32,8 @@ class Undercloud(Server):
                 checksum=file['checksum'],
                 dest='/home/stack/%s.tar' % name,
                 user='stack')
-            self.run('tar xf %s.tar' % name, user='stack')
+            self.run('tar xf /home/stack/%s.tar' % name,
+                     user='stack')
         self.fetch_image(
             path=guest_image_path,
             checksum=guest_image_checksum,
@@ -20,15 +41,15 @@ class Undercloud(Server):
             user='stack')
         hostname_s = self.run('hostname -s')[0].rstrip('\n')
         hostname_f = self.run('cat /etc/hostname')[0].rstrip('\n')
-        self.run("sed 's,127.0.0.1,127.0.0.1 %s %s,' /etc/hosts" % (hostname_s, hostname_f), user='root')
+        self.run("sed 's,127.0.0.1,127.0.0.1 %s %s,' /etc/hosts" % (hostname_s, hostname_f))
         self.set_selinux('permissive')
-        self.run('openstack undercloud install', user='stack')
-        self.run('heat stack list', user='stack', stackrc=True)
-        self.run('openstack overcloud image upload', user='stack', stackrc=True)
-        self.run('openstack baremetal import --json instackenv.json', user='stack', stackrc=True)
-        self.run('openstack baremetal configure boot', user='stack', stackrc=True)
-        self.run('openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal', user='stack', stackrc=True)
+        self.run('openstack undercloud install')
+        self.run('heat stack list')
+        self.run('openstack overcloud image upload')
+        self.run('openstack baremetal import --json instackenv.json')
+        self.run('openstack baremetal configure boot')
+        self.run('openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal')
 
     def start_overcloud(self):
-        self.run('openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal', user='stack', stackrc=True)
-        self.run('openstack overcloud deploy --templates -e /usr/share/openstack-tripleo-heat-templates/overcloud-resource-registry-puppet.yaml', user='stack', stackrc=True)
+        self.run('openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal')
+        self.run('openstack overcloud deploy --templates -e /usr/share/openstack-tripleo-heat-templates/overcloud-resource-registry-puppet.yaml')

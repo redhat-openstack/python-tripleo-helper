@@ -30,7 +30,7 @@ def build_openstack_instance(nova_api, name, image, flavor, key_name, nics):
 
     # TODO(yassine): convert to a wait() function
     while True:
-        LOG.info("* instance '%s' status %s" % (name, instance.status))
+        LOG.info("instance '%s' status %s" % (name, instance.status))
         if instance.status == 'ERROR':
             LOG.error("boot instance '%s' failed" % name)
             return None

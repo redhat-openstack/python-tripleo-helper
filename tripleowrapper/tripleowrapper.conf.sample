@@ -1,8 +1,8 @@
 ---
 rhsm:
-    login: user_name
-    password: pw
-    pool_id: 8frdgrdgfdr
+    login: <rhn_login>
+    password: <rhn_password>
+    pool_id: <pool_id>
 repositories: &DEFAULT_REPOSITORIES
     - {type: rhsm_channel, name: rhel-7-server-rpms}
     - {type: rhsm_channel, name: rhel-7-server-optional-rpms}
@@ -25,9 +25,10 @@ repositories: &DEFAULT_REPOSITORIES
       dest: /etc/yum.repos.d/rhos-release-8-director.repo
 provisioner:
     type: openstack
-    instance_name_prefix: goneri
-#    image: CentOS 7 (1510) x86_64
-    image: RHEL 7.2 x86_64
+    instance_name_prefix: <my-prefix>
+    image:
+        name: RHEL 7.2 x86_64
+        user: <user name>
     flavor: m1.hypervisor
     network: private
     keypair: DCI
@@ -41,7 +42,7 @@ undercloud:
     guest_image_checksum: 486900b54f4757cb2d6b59d9bce9fe90
 
 ssh:
-    private_key: /home/goneri/.ssh/DCI/id_rsa
+    private_key: /home/dci/.ssh/id_rsa
 overcloud:
     files:
         overcloud-full:
