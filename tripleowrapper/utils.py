@@ -21,7 +21,7 @@ class SSHSession(object):
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         connect_to = via_ip if via_ip else ip
         LOG.debug('Connecting to {user}@{ip} (via_ip={via_ip})'.format(
-            user=user,ip=ip, via_ip=via_ip))
+            user=user, ip=ip, via_ip=via_ip))
         for i in range(60):
             try:
                 client.connect(
@@ -31,7 +31,7 @@ class SSHSession(object):
                     key_filename=None)
             # NOTE(Gonéri): TypeError is in the list because of
             # https://github.com/paramiko/paramiko/issues/615
-            except (OSError, ConnectionResetError, TypeError):
+            except (OSError, TypeError):
                 print('SSH: Waiting for %s' % ip)
                 time.sleep(1)
             else:
@@ -39,7 +39,6 @@ class SSHSession(object):
                 break
         self.transport = self.get_transport()
         LOG.debug('Connected')
-
 
     def load_private_key(self, priv_key):
         """Register the SSH private key."""
@@ -49,9 +48,9 @@ class SSHSession(object):
     def get_transport(self):
         if self.via_ip:
             channel = self.client.get_transport().open_channel(
-            'direct-tcpip',
-            (self.ip, 22),
-            (self.via_ip, 0))
+                'direct-tcpip',
+                (self.ip, 22),
+                (self.via_ip, 0))
             transport = paramiko.Transport(channel)
             transport.start_client()
             transport.auth_publickey(self.user, self.private_key)
@@ -59,7 +58,6 @@ class SSHSession(object):
             transport = self.client.get_transport()
         transport.set_keepalive(10)
         return transport
-
 
     def __enter__(self):
         return self
@@ -84,7 +82,7 @@ class SSHSession(object):
         return cmd_output.getvalue(), ssh_channel.exit_status
 
     def put(self, source, dest):
-        sftp = paramiko.SFTPClient.from_transport(selftransport)
+        sftp = paramiko.SFTPClient.from_transport(self.transport)
         sftp.put(source, dest)
 
     def put_content(self, content, dest, mode='w'):

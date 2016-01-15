@@ -29,6 +29,6 @@ class Undercloud(Server):
         self.run('openstack baremetal configure boot', user='stack', stackrc=True)
         self.run('openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal', user='stack', stackrc=True)
 
-    def start_overcloud():
+    def start_overcloud(self):
         self.run('openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal', user='stack', stackrc=True)
         self.run('openstack overcloud deploy --templates -e /usr/share/openstack-tripleo-heat-templates/overcloud-resource-registry-puppet.yaml', user='stack', stackrc=True)

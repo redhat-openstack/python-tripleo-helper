@@ -24,9 +24,9 @@ import os
 import sys
 
 from tripleowrapper.host0 import Host0
-from tripleowrapper.undercloud import Undercloud
 from tripleowrapper.provisioners.openstack import os_libvirt
 from tripleowrapper.provisioners.openstack import utils as os_utils
+from tripleowrapper.undercloud import Undercloud
 
 LOG = logging.getLogger('__chainsaw__')
 
@@ -124,6 +124,7 @@ def deploy_undercloud(host0, config):
     undercloud.install_osp()
     return undercloud
 
+
 @click.command()
 @click.option('--os-auth-url', envvar='OS_AUTH_URL', required=True,
               help="Keystone auth url.")
@@ -145,25 +146,21 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
     undercloud = config['undercloud']
     ssh = config['ssh']
 
-    print('host0')
     if host0_ip:
         host0 = Host0(host0_ip, key_filename=ssh['private_key'])
     else:
         host0 = deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config)
 
-    print('undercloud')
     if undercloud_ip:
         undercloud = Undercloud(undercloud_ip, via_ip=host0.ip, key_filename=ssh['private_key'])
     else:
         undercloud = deploy_undercloud(host0, config)
-
 
     undercloud.deploy(
         guest_image_path=overcloud['guest_image_path'],
         guest_image_checksum=overcloud['guest_image_checksum'],
         files=overcloud['files'])
     undercloud.start_overcloud()
-
 
 
 # This is for setuptools entry point.

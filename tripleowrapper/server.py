@@ -11,7 +11,7 @@ class Server(object):
         self.ip = ip
         self.via_ip = via_ip
         self._rhsm_status = None
-        self.key_filename=key_filename
+        self.key_filename = key_filename
         self.ssh_session = {}
         self._run_with_stackrc = False
 
@@ -120,7 +120,6 @@ class Server(object):
 
     def install_osp(self):
         self.run('yum install -y yum-plugin-priorities python-tripleoclient python-rdomanager-oscplugin')
-
 
     def set_selinux(self, state):
         allowed_states = ('enforcing', 'permissive', 'disabled')
