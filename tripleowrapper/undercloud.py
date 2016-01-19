@@ -25,7 +25,7 @@ class Undercloud(Server):
                         via_ip=via_ip,
                         key_filename=key_filename)
 
-    def deploy(self, guest_image_path, guest_image_checksum, files):
+    def start_undercloud(self, guest_image_path, guest_image_checksum, files):
         for name, file in files.items():
             self.fetch_image(
                 path=file['path'],

@@ -134,6 +134,10 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
     vm_undercloud.clean_system()
     vm_undercloud.update_packages()
     vm_undercloud.install_osp()
+    vm_undercloud.start_undercloud(
+        config['overcloud']['guest_image_path'],
+        config['overcloud']['guest_image_checksum'],
+        config['overcloud']['files'])
     vm_undercloud.start_overcloud()
 
 # This is for setuptools entry point.
