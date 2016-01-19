@@ -108,7 +108,7 @@ class Server(object):
         repo_files = [r for r in repositories if r['type'] == 'yum_repo']
 
         if rhsm_channels:
-            subscription_cmd = "subscription-manager repos '--disable=*'" + ' --enable='.join(rhsm_channels)
+            subscription_cmd = "subscription-manager repos '--disable=*' --enable=" + ' --enable='.join(rhsm_channels)
             self.run(subscription_cmd)
 
         for repo_files in repo_files:
