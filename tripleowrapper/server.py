@@ -136,10 +136,12 @@ class Server(object):
         self.run('yum install -y yum-utils iptables libselinux-python psmisc redhat-lsb-core rsync')
 
     def clean_system(self):
-        self.run('systemctl disable NetworkManager')
-        self.run('systemctl stop NetworkManager')
-        self.run('pkill -9 dhclient')
+        self.run('systemctl disable NetworkManager', success_status=(0, 1))
+        self.run('systemctl stop NetworkManager', success_status=(0, 5))
+        self.run('pkill -9 dhclient', success_status=(0, 1))
         self.run('yum remove -y cloud-init NetworkManager')
+        self.run('systemctl enable network')
+        self.run('systemctl start network')
 
     def update_packages(self, allow_reboot=False):
         self.run('yum update -y')
