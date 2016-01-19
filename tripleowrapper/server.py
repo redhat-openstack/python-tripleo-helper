@@ -23,23 +23,22 @@ LOG = logging.getLogger('__chainsaw__')
 
 
 class Server(object):
-    def __init__(self, hostname, user=None, key_filename=None,
+    def __init__(self, hostname, user='root', key_filename=None,
                  redirect_to_host=None):
         self._hostname = hostname
         self._key_filename = key_filename
         self._ssh_pool = ssh.PoolSshClient()
         self._redirect_to_host = redirect_to_host
 
-        if user:
-            self._ssh_pool.build_ssh_client(hostname, user, key_filename,
-                                            redirect_to_host)
-        if user != 'root':
+        if user == 'root':
             self.__enable_root_user()
+        else:
+            self._ssh_pool.build_ssh_client(
+                hostname, user, key_filename,
+                redirect_to_host)
 
     def __enable_root_user(self):
         """Enable the root account on the remote host."""
-        LOG.info('enabling the root user')
-
         # connect as a root user
         _root_ssh_client = ssh.SshClient(
             hostname=self._hostname,
@@ -58,6 +57,7 @@ class Server(object):
             self._ssh_pool.add_ssh_client('root', _root_ssh_client)
             return
 
+        LOG.info('enabling the root user')
         # add the cloud user to the ssh pool
         self._ssh_pool.build_ssh_client(
             hostname=self._hostname,

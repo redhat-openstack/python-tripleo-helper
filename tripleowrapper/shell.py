@@ -72,7 +72,7 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
             sys.exit(1)
 
         host_0 = host0.Host0(hostname=host0_ip,
-                             user=config['provisioner']['image'].get('user'),
+                             user=config['provisioner']['image'].get('user', 'root'),
                              key_filename=config['ssh']['private_key'])
         host_0.rhsm_register(
             config['rhsm']['login'],
@@ -134,7 +134,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
 
     if undercloud_ip:
         vm_undercloud = undercloud.Undercloud(undercloud_ip,
-                                              user=config['provisioner']['image'].get('user'),
+                                              user=config['provisioner']['image'].get('user', 'root'),
                                               host0_ip=host0_ip,
                                               key_filename=ssh['private_key'])
     else:
