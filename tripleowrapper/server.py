@@ -23,10 +23,11 @@ LOG = logging.getLogger('__chainsaw__')
 
 
 class Server(object):
-    def __init__(self, hostname, user='root', key_filename=None,
+    def __init__(self, hostname, user='root', via_ip=None, key_filename=None,
                  redirect_to_host=None):
         self._hostname = hostname
         self._key_filename = key_filename
+        self._via_ip = via_ip
         self._ssh_pool = ssh.PoolSshClient()
         self._redirect_to_host = redirect_to_host
 
@@ -44,7 +45,7 @@ class Server(object):
             hostname=self._hostname,
             user='root',
             key_filename=self._key_filename,
-            redirect_to_host=self._redirect_to_host)
+            via_ip=self._via_ip)
         _root_ssh_client.start()
         result, _ = _root_ssh_client.run('uname -a')
 
@@ -63,7 +64,7 @@ class Server(object):
             hostname=self._hostname,
             user=user,
             key_filename=self._key_filename,
-            redirect_to_host=self._redirect_to_host)
+            via_ip=self._via_ip)
         # enable the root user
         _cmd = "sudo sed -i 's,.*ssh-rsa,ssh-rsa,' /root/.ssh/authorized_keys"
         self._ssh_pool.run(user, _cmd)
@@ -124,7 +125,7 @@ class Server(object):
         self.run('chmod 600 /home/stack/.ssh/authorized_keys')
         self._ssh_pool.build_ssh_client(self._hostname, 'stack',
                                         self._key_filename,
-                                        self._redirect_to_host)
+                                        self._via_ip)
 
     def fetch_image(self, path, checksum, dest, user=None):
         self.create_file("%s.md5" % dest, '%s %s\n' % (checksum, dest))

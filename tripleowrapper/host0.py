@@ -67,7 +67,7 @@ class Host0(Server):
             '/sbin/ip n | grep $(tripleo get-vm-mac instack) | awk \'{print $1;}\'',
             user='stack')[0]
         undercloud = Undercloud(undercloud_ip,
-                                host0_ip=self._hostname,
+                                via_ip=self._hostname,
                                 user='root',
                                 key_filename=self._key_filename)
         return undercloud

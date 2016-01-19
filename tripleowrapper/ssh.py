@@ -37,7 +37,7 @@ class SshClient(object):
         - create remote files
     """
     def __init__(self, hostname, user, key_filename=None,
-                 redirect_to_host=None):
+                 via_ip=None):
         """:param hostname: the host on which to connect
         :type hostname: str
         :param user: the user to use for the connection
@@ -49,14 +49,49 @@ class SshClient(object):
         will use the port 22
         :type redirect_to_host: str
         """
+        assert hostname, 'hostname is defined.'
+        assert user, 'user is defined.'
         self._hostname = hostname
         self._user = user
         self._key_filename = key_filename
+        self.load_private_key(key_filename)
         self._client = paramiko.SSHClient()
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self._redirect_to_host = redirect_to_host
+        self._via_ip = via_ip
         self._transport = None
         self._started = False
+        self.description = 'not started yet'
+
+    def load_private_key(self, priv_key):
+        """Register the SSH private key."""
+        with open(priv_key) as fd:
+            self._private_key = paramiko.RSAKey.from_private_key(fd)
+
+    def _get_transport_via_ip(self):
+        exception = None
+        for i in range(60):
+            try:
+                channel = self._client.get_transport().open_channel(
+                    'direct-tcpip',
+                    (self._hostname, 22),
+                    (self._via_ip, 0))
+            except ssh_exception.ChannelException as exception:
+                LOG.debug('%s creating the direct-tcip connections' % self.description)
+                time.sleep(1)
+            else:
+                transport = paramiko.Transport(channel)
+                transport.start_client()
+                transport.auth_publickey(self._user, self._private_key)
+                return transport
+        raise exception
+
+    def _get_transport(self):
+        if self._via_ip:
+            transport = self._get_transport_via_ip()
+        else:
+            transport = self._client.get_transport()
+        transport.set_keepalive(10)
+        return transport
 
     def start(self):
         """Start the ssh client and connect to the host.
@@ -65,28 +100,35 @@ class SshClient(object):
         If it doesn't succed to connect then the function will raise
         an SSHException.
         """
-        proxy = None
-        for i in range(90):
+        if self._via_ip:
+            connect_to = self._via_ip
+            self.description = '[%s@%s via %s]' % (self._user,
+                                                   self._hostname,
+                                                   self._via_ip)
+        else:
+            connect_to = self._hostname
+            self.description = '[%s@%s]' % (self._user,
+                                            self._hostname)
+
+        for i in range(60):
             try:
-                if self._redirect_to_host:
-                    proxy = paramiko.ProxyCommand(
-                        'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -W %s:%s %s@%s' %
-                        (self._redirect_to_host, 22, self._user, self._hostname))
-                self._client.connect(hostname=self._hostname,
-                                     username=self._user,
-                                     key_filename=self._key_filename,
-                                     allow_agent=True,
-                                     sock=proxy)
-            except (ssh_exception.SSHException,
-                    ssh_exception.NoValidConnectionsError,
-                    OSError,
-                    TypeError) as e:
+                self._client.connect(
+                    connect_to,
+                    username=self._user,
+                    allow_agent=True,
+                    key_filename=self._key_filename)
+            # NOTE(Gonéri): TypeError is in the list because of
+            # https://github.com/paramiko/paramiko/issues/615
+                self._transport = self._get_transport()
+            except (OSError,
+                    TypeError,
+                    ssh_exception.SSHException,
+                    ssh_exception.NoValidConnectionsError) as e:
+                LOG.info('%s waiting for %s' % (self.description, connect_to))
                 LOG.debug("exception: '%s'" % str(e))
-                LOG.warn("waiting for ssh service on '%s@%s' %s" %
-                         (self._user, self._hostname, self._redirect_to_host))
                 time.sleep(1)
             else:
-                self._transport = self._client.get_transport()
+                LOG.debug('%s connected' % self.description)
                 self._started = True
                 return
         _error = ("unable to connect to ssh service on '%s'" % self._hostname)
@@ -125,11 +167,7 @@ class SshClient(object):
         cmd_output = io.StringIO()
         channel = self._get_channel()
         cmd = "sudo %s" % cmd if sudo else cmd
-        if self._redirect_to_host:
-            LOG.info("[%s@%s] run '%s'" % (self._user,
-                                           self._redirect_to_host, cmd))
-        else:
-            LOG.info("[%s@%s] run '%s'" % (self._user, self._hostname, cmd))
+        LOG.info("%s run '%s'" % (self.description, cmd))
         channel.exec_command(cmd)
 
         while True:
@@ -149,9 +187,8 @@ class SshClient(object):
         elif error_callback:
             return error_callback(cmd_output, exit_status)
         else:
-            _err_hostname = self._redirect_to_host or self._hostname
             _error = ("error on command '%s' on '%s', result='%s', rc='%s'" %
-                      (cmd, _err_hostname, cmd_output, exit_status))
+                      (cmd, self._hostname, cmd_output, exit_status))
             LOG.error(_error)
             raise ssh_exception.SSHException(_error)
 
@@ -203,9 +240,9 @@ class PoolSshClient(object):
         self._ssh_clients = {}
 
     def build_ssh_client(self, hostname, user, key_filename=None,
-                         redirect_to_host=None):
+                         via_ip=None):
         _ssh_client = SshClient(hostname, user, key_filename,
-                                redirect_to_host)
+                                via_ip)
         _ssh_client.start()
         self._ssh_clients[user] = _ssh_client
 

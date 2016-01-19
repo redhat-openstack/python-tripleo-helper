@@ -18,11 +18,11 @@ from tripleowrapper.server import Server
 
 
 class Undercloud(Server):
-    def __init__(self, undercloud_ip, user, host0_ip, key_filename=None):
+    def __init__(self, undercloud_ip, user, via_ip=None, key_filename=None):
         Server.__init__(self,
-                        hostname=host0_ip,
+                        hostname=undercloud_ip,
                         user=user,
-                        redirect_to_host=undercloud_ip,
+                        via_ip=via_ip,
                         key_filename=key_filename)
 
     def deploy(self, guest_image_path, guest_image_checksum, files):
