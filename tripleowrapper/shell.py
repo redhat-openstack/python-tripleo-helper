@@ -23,7 +23,7 @@ import logging
 import os
 import sys
 
-from tripleowrapper import host0
+import tripleowrapper.host0
 from tripleowrapper import logger
 from tripleowrapper.provisioners.openstack import os_libvirt
 from tripleowrapper.provisioners.openstack import utils as os_utils
@@ -71,38 +71,14 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
             LOG.error("instance '%s' failed" % instance_name)
             sys.exit(1)
 
-        host_0 = host0.Host0(hostname=host0_ip,
-                             user=config['provisioner']['image'].get('user', 'root'),
-                             key_filename=config['ssh']['private_key'])
-        host_0.rhsm_register(
+        host0 = tripleowrapper.host0.Host0(hostname=host0_ip,
+                                           user=config['provisioner']['image'].get('user', 'root'),
+                                           key_filename=config['ssh']['private_key'])
+        host0.rhsm_register(
             config['rhsm']['login'],
             config['rhsm'].get('password', os.environ.get('RHN_PW')),
             config['rhsm']['pool_id'])
-        host_0.enable_repositories(provisioner['repositories'])
-        host_0.install_nosync()
-        host_0.create_stack_user()
-        return host_0
-
-
-def deploy_undercloud(host0, config):
-    host0.deploy_hypervisor()
-    vm_undercloud = host0.instack_virt_setup(
-        config['undercloud']['guest_image_path'],
-        config['undercloud']['guest_image_checksum'],
-        rhsm_login=config['rhsm']['login'],
-        rhsm_password=config['rhsm'].get('password', os.environ.get('RHN_PW')))
-    vm_undercloud.rhsm_register(
-        config['rhsm']['login'],
-        config['rhsm'].get('password', os.environ.get('RHN_PW')),
-        config['rhsm']['pool_id'])
-    vm_undercloud.enable_repositories(config['undercloud']['repositories'])
-    vm_undercloud.install_nosync()
-    vm_undercloud.create_stack_user()
-    vm_undercloud.install_base_packages()
-    vm_undercloud.clean_system()
-    vm_undercloud.update_packages()
-    vm_undercloud.install_osp()
-    return vm_undercloud
+        return host0
 
 
 @click.command()
@@ -123,27 +99,41 @@ def deploy_undercloud(host0, config):
 def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercloud_ip, config_file):
     logger.setup_logging()
     config = yaml.load(config_file)
-    overcloud = config['overcloud']
     ssh = config['ssh']
+    host0 = None
+    vm_undercloud = None
 
     if host0_ip:
-        host_0 = host0.Host0(hostname=host0_ip, key_filename=ssh['private_key'])
-    else:
-        host_0 = deploy_host0(os_auth_url, os_username, os_password,
-                              os_tenant_name, config)
+        host0 = tripleowrapper.host0.Host0(hostname=host0_ip,
+                                           user=config['provisioner']['image'].get('user', 'root'),
+                                           key_filename=ssh['private_key'])
+        if undercloud_ip:
+            vm_undercloud = undercloud.Undercloud(undercloud_ip,
+                                                  user='root',
+                                                  via_ip=host0_ip,
+                                                  key_filename=ssh['private_key'])
+    if not host0:
+        host0 = deploy_host0(os_auth_url, os_username, os_password,
+                             os_tenant_name, config)
 
-    if undercloud_ip:
-        vm_undercloud = undercloud.Undercloud(undercloud_ip,
-                                              user=config['provisioner']['image'].get('user', 'root'),
-                                              host0_ip=host0_ip,
-                                              key_filename=ssh['private_key'])
-    else:
-        vm_undercloud = deploy_undercloud(host_0, config)
+    if not vm_undercloud:
+        host0.enable_repositories(config['provisioner']['repositories'])
+        host0.install_nosync()
+        host0.create_stack_user()
+        host0.deploy_hypervisor()
+        vm_undercloud = host0.instack_virt_setup(
+            config['undercloud']['guest_image_path'],
+            config['undercloud']['guest_image_checksum'],
+            rhsm_login=config['rhsm']['login'],
+            rhsm_password=config['rhsm'].get('password', os.environ.get('RHN_PW')))
 
-    vm_undercloud.deploy(
-        guest_image_path=overcloud['guest_image_path'],
-        guest_image_checksum=overcloud['guest_image_checksum'],
-        files=overcloud['files'])
+    vm_undercloud.enable_repositories(config['undercloud']['repositories'])
+    vm_undercloud.install_nosync()
+    vm_undercloud.create_stack_user()
+    vm_undercloud.install_base_packages()
+    vm_undercloud.clean_system()
+    vm_undercloud.update_packages()
+    vm_undercloud.install_osp()
     vm_undercloud.start_overcloud()
 
 # This is for setuptools entry point.
