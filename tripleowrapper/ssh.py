@@ -61,6 +61,7 @@ class SshClient(object):
         self._transport = None
         self._started = False
         self.description = 'not started yet'
+        self._environment_filenames = []
 
     def load_private_key(self, priv_key):
         """Register the SSH private key."""
@@ -155,6 +156,9 @@ class SshClient(object):
 
         :param cmd: the command to run
         :type cmd: str
+        :param sudo: True if the command should be run with sudo, this parameter
+        disable the use of environment files.
+        :type sudo: str
         :param success_status: the list of the possible success status
         :type success_status: list
         :param error_callback: if provided, the callback to call in case of
@@ -166,7 +170,12 @@ class SshClient(object):
         self._check_started()
         cmd_output = io.StringIO()
         channel = self._get_channel()
-        cmd = "sudo %s" % cmd if sudo else cmd
+
+        if sudo:
+            cmd = "sudo %s" % cmd
+        else:
+            for filename in self._environment_filenames:
+                cmd = '. %s; %s' % (filename, cmd)
         LOG.info("%s run '%s'" % (self.description, cmd))
         channel.exec_command(cmd)
 
@@ -234,6 +243,9 @@ class SshClient(object):
                 'user': self._user,
                 'key_filename': self._key_filename}
 
+    def add_environment_file(self, filename):
+        self._environment_filenames.append(filename)
+
 
 class PoolSshClient(object):
     def __init__(self):
@@ -285,3 +297,8 @@ class PoolSshClient(object):
     def stop_all(self):
         for ssh_client in self._ssh_clients.values():
             ssh_client.stop()
+
+    def add_environment_file(self, user, filename):
+        self._check_ssh_client(user)
+
+        self._ssh_clients[user].add_environment_file(filename)

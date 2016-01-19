@@ -159,3 +159,6 @@ class Server(object):
         self.run('setenforce %s' % state)
         self.create_file('/etc/sysconfig/selinux',
                          'SELINUX=%s\nSELINUXTYPE=targeted\n' % state)
+
+    def add_environment_file(self, user, filename):
+        return self._ssh_pool.add_environment_file(user, filename)
