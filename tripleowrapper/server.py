@@ -79,9 +79,8 @@ class Server(object):
     def create_file(self, path, content, mode='w', user='root'):
         return self._ssh_pool.create_file(user, path, content, mode)
 
-    def run(self, cmd, user=None, sudo=False, ignore_error=False,
+    def run(self, cmd, user='root', sudo=False, ignore_error=False,
             success_status=(0,), error_callback=None):
-        user = user or 'root'
         return self._ssh_pool.run(
             user, cmd, sudo=sudo, ignore_error=ignore_error,
             success_status=success_status, error_callback=error_callback)
