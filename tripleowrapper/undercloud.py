@@ -49,7 +49,7 @@ class Undercloud(Server):
         self.run('openstack overcloud image upload', user='stack')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
         self.run('openstack baremetal configure boot', user='stack')
-        self.run('openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal', user='stack')
+        self.run('openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal', user='stack', success_status=(0, 1))
 
     def start_overcloud(self):
         self.run('openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal', user='stack')
