@@ -99,7 +99,7 @@ class Server(object):
                 login, password), success_status=(0, 64))
         # TODO(Gonéri): use the correct pool
         if pool_id:
-            self.run('subscription-manager attach --pool %s ' % pool_id)
+            self.run('subscription-manager attach --pool %s' % pool_id)
         else:
             self.run('subscription-manager attach --auto')
 
