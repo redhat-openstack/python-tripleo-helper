@@ -40,6 +40,7 @@ class Host0(Server):
     def instack_virt_setup(self, guest_image_path, guest_image_checksum,
                            rhsm_login=None, rhsm_password=None):
 
+        self.run('sysctl net.ipv4.ip_forward=1')
         self.fetch_image(path=guest_image_path, checksum=guest_image_checksum, dest='/home/stack/guest_image.qcow2',
                          user='stack')
         self.run("LIBGUESTFS_BACKEND=direct virt-customize -a /home/stack/guest_image.qcow2 --run-command 'echo MTU=\"1400\" >> /etc/sysconfig/network-scripts/ifcfg-eth0'")
