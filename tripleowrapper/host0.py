@@ -43,6 +43,8 @@ class Host0(Server):
         self.run('sysctl net.ipv4.ip_forward=1')
         self.fetch_image(path=guest_image_path, checksum=guest_image_checksum, dest='/home/stack/guest_image.qcow2',
                          user='stack')
+        # NOTE(Gonéri): this is a hack for our OpenStack, the MTU of its outgoing route
+        # is 1400 and libvirt do not provide a mechanism to adjust the guests MTU.
         self.run("LIBGUESTFS_BACKEND=direct virt-customize -a /home/stack/guest_image.qcow2 --run-command 'echo MTU=\"1400\" >> /etc/sysconfig/network-scripts/ifcfg-eth0'")
 
         env = Environment()
