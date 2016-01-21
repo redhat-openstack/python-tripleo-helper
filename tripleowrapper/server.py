@@ -141,7 +141,7 @@ class Server(object):
         self.run('pkill -9 dhclient', success_status=(0, 1))
         self.run('yum remove -y cloud-init NetworkManager')
         self.run('systemctl enable network')
-        self.run('systemctl start network')
+        self.run('systemctl restart network')
 
     def update_packages(self, allow_reboot=False):
         self.run('yum update -y')
