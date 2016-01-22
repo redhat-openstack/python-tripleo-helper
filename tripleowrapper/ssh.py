@@ -148,7 +148,7 @@ class SshClient(object):
         self._client.close()
 
     def run(self, cmd, sudo=False, ignore_error=False, success_status=(0,),
-            error_callback=None):
+            error_callback=None, custom_log=None):
         """Run a command on the remote host.
 
         The command is run on the remote host, if there is a redirected host
@@ -166,6 +166,9 @@ class SshClient(object):
         and the returned error code.
         :return: the tuple (output of the command, returned code)
         :rtype: tuple
+        :param custom_log: a optional string to record in the log instead of the command.
+        This is useful for example if you want to hide a password.
+        :type custom_log: str
         """
         self._check_started()
         cmd_output = io.StringIO()
@@ -176,7 +179,10 @@ class SshClient(object):
         else:
             for filename in self._environment_filenames:
                 cmd = '. %s; %s' % (filename, cmd)
-        LOG.info("%s run '%s'" % (self.description, cmd))
+
+        if not custom_log:
+            custom_log = cmd
+        LOG.info("%s run '%s'" % (self.description, custom_log))
         channel.exec_command(cmd)
 
         while True:
@@ -276,7 +282,7 @@ class PoolSshClient(object):
             raise ssh_exception.SSHException(_error)
 
     def run(self, user, cmd, sudo=False, ignore_error=False,
-            success_status=(0,), error_callback=None):
+            success_status=(0,), error_callback=None, custom_log=None):
         self._check_ssh_client(user)
 
         return self._ssh_clients[user].run(
@@ -284,7 +290,8 @@ class PoolSshClient(object):
             sudo=sudo,
             ignore_error=ignore_error,
             success_status=success_status,
-            error_callback=error_callback)
+            error_callback=error_callback,
+            custom_log=custom_log)
 
     def send_file(self, user, local_path, remote_path):
         self._check_ssh_client(user)

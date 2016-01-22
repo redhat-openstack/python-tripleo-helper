@@ -31,13 +31,14 @@ class MockServerRun(MockMethod):
         MockMethod.__init__(self)
 
     def __call__(self, cmd, user=None, sudo=False, ignore_error=False,
-                 success_status=(0,), error_callback=None):
+                 success_status=(0,), error_callback=None, custom_log=None):
         user = user or 'root'
         self._calls.append({'cmd': cmd,
                             'user': user,
                             'ignore_error': ignore_error,
                             'success_status': success_status,
-                            'error_callback': error_callback})
+                            'error_callback': error_callback,
+                            'custom_log': custom_log})
         return "ok", 0
 
 
