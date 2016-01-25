@@ -1,4 +1,9 @@
 ---
+dci:
+    control_server_url: <control server url>
+    login: <dci login>
+    password: <dci password>
+    remoteci_id: <remoteci id>
 rhsm:
     login: <rhn_login>
     password: <rhn_password>

@@ -23,6 +23,10 @@ import logging
 import os
 import sys
 
+from dciclient.v1.api import context as dcicontext
+from dciclient.v1.api import job as dcijob
+from dciclient.v1.api import jobstate as dcijobstate
+
 import tripleowrapper.host0
 from tripleowrapper import logger
 from tripleowrapper.provisioners.openstack import os_libvirt
@@ -97,48 +101,65 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
 def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercloud_ip, config_file):
-    logger.setup_logging()
     config = yaml.load(config_file)
     ssh = config['ssh']
     host0 = None
     vm_undercloud = None
 
-    if host0_ip:
-        host0 = tripleowrapper.host0.Host0(hostname=host0_ip,
-                                           user=config['provisioner']['image'].get('user', 'root'),
-                                           key_filename=ssh['private_key'])
-        if undercloud_ip:
-            vm_undercloud = undercloud.Undercloud(undercloud_ip,
-                                                  user='root',
-                                                  via_ip=host0_ip,
-                                                  key_filename=ssh['private_key'])
-    if not host0:
-        host0 = deploy_host0(os_auth_url, os_username, os_password,
-                             os_tenant_name, config)
+    dci_context = dcicontext.build_dci_context(
+        config['dci']['control_server_url'],
+        config['dci']['login'],
+        config['dci']['password'])
+    logger.setup_logging(dci_context)
 
-    if not vm_undercloud:
-        host0.enable_repositories(config['provisioner']['repositories'])
-        host0.install_nosync()
-        host0.create_stack_user()
-        host0.deploy_hypervisor()
-        vm_undercloud = host0.instack_virt_setup(
-            config['undercloud']['guest_image_path'],
-            config['undercloud']['guest_image_checksum'],
-            rhsm_login=config['rhsm']['login'],
-            rhsm_password=config['rhsm'].get('password', os.environ.get('RHN_PW')))
+    status = 'pre-run'
+    job = dcijob.schedule(dci_context,
+                          remoteci_id=config['dci']['remoteci_id']).json()
+    job_id = job['job']['id']
 
-    vm_undercloud.enable_repositories(config['undercloud']['repositories'])
-    vm_undercloud.install_nosync()
-    vm_undercloud.create_stack_user()
-    vm_undercloud.install_base_packages()
-    vm_undercloud.clean_system()
-    vm_undercloud.update_packages()
-    vm_undercloud.install_osp()
-    vm_undercloud.start_undercloud(
-        config['overcloud']['guest_image_path'],
-        config['overcloud']['guest_image_checksum'],
-        config['overcloud']['files'])
-    vm_undercloud.start_overcloud()
+    try:
+        if host0_ip:
+            dcijobstate.create(dci_context, status, 'Reusing existing host0', job_id)
+            host0 = tripleowrapper.host0.Host0(hostname=host0_ip,
+                                               user=config['provisioner']['image'].get('user', 'root'),
+                                               key_filename=ssh['private_key'])
+            if undercloud_ip:
+                dcijobstate.create(dci_context, status, 'Reusing existing undercloud', job_id)
+                vm_undercloud = undercloud.Undercloud(undercloud_ip,
+                                                      user='root',
+                                                      via_ip=host0_ip,
+                                                      key_filename=ssh['private_key'])
+        if not host0:
+            dcijobstate.create(dci_context, status, 'Creating the host0', job_id)
+            host0 = deploy_host0(os_auth_url, os_username, os_password,
+                                 os_tenant_name, config)
+
+        if not vm_undercloud:
+            dcijobstate.create(dci_context, status, 'Creating the undercloud', job_id)
+            host0.enable_repositories(config['provisioner']['repositories'])
+            host0.install_nosync()
+            host0.create_stack_user()
+            host0.deploy_hypervisor()
+            vm_undercloud = host0.instack_virt_setup(
+                config['undercloud']['guest_image_path'],
+                config['undercloud']['guest_image_checksum'],
+                rhsm_login=config['rhsm']['login'],
+                rhsm_password=config['rhsm'].get('password', os.environ.get('RHN_PW')))
+
+        status = 'running'
+        dcijobstate.create(dci_context, status, 'Configuring the undercloud', job_id)
+        vm_undercloud.enable_repositories(config['undercloud']['repositories'])
+        vm_undercloud.install_nosync()
+        vm_undercloud.create_stack_user()
+        vm_undercloud.install_base_packages()
+        vm_undercloud.clean_system()
+        vm_undercloud.update_packages()
+        vm_undercloud.install_osp()
+        vm_undercloud.start_overcloud()
+        dcijobstate.create(dci_context, 'success', 'Job succeed :-)', job_id)
+    except Exception as e:
+        dcijobstate.create(dci_context, 'failure', 'Job failed :-(', job_id)
+        raise e
 
 # This is for setuptools entry point.
 main = cli
