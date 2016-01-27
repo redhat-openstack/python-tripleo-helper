@@ -202,8 +202,8 @@ class SshClient(object):
         elif error_callback:
             return error_callback(cmd_output, exit_status)
         else:
-            _error = ("error on command '%s' on '%s', result='%s', rc='%s'" %
-                      (cmd, self._hostname, cmd_output, exit_status))
+            _error = ("%s command %s has failed with, rc='%s'" %
+                      (self.description, custom_log, exit_status))
             LOG.error(_error)
             raise ssh_exception.SSHException(_error)
 
