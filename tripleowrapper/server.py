@@ -80,10 +80,11 @@ class Server(object):
         return self._ssh_pool.create_file(user, path, content, mode)
 
     def run(self, cmd, user='root', sudo=False, ignore_error=False,
-            success_status=(0,), error_callback=None):
+            success_status=(0,), error_callback=None, custom_log=None):
         return self._ssh_pool.run(
             user, cmd, sudo=sudo, ignore_error=ignore_error,
-            success_status=success_status, error_callback=error_callback)
+            success_status=success_status, error_callback=error_callback,
+            custom_log=custom_log)
 
     def install_nosync(self):
         _, rc = self.run('yum install -y https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm',
@@ -94,10 +95,12 @@ class Server(object):
     def rhsm_register(self, login, password, pool_id=None):
         # Ensure the RHEL beta channel are disabled
         self.run('rm /etc/pki/product/69.pem', ignore_error=True)
+        custom_log = 'subscription-manager register --username %s --password *******' % login
         self.run(
             'subscription-manager register --username %s --password %s' % (
-                login, password), success_status=(0, 64))
-        # TODO(Gonéri): use the correct pool
+                login, password),
+            success_status=(0, 64),
+            custom_log=custom_log)
         if pool_id:
             self.run('subscription-manager attach --pool %s' % pool_id)
         else:
