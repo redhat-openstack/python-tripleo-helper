@@ -54,11 +54,11 @@ class Host0(Server):
             {
                 'dib_dir': '/home/stack/DIB',
                 'node': {
-                    'count': 3,
-                    'mem': 4096,
+                    'count': 2,
+                    'mem': 6144,
                     'cpu': 2
                 },
-                'undercloud_node_mem': 4096,
+                'undercloud_node_mem': 8192,
                 'guest_image_name': '/home/stack/guest_image.qcow2',
                 'rhsm': {
                     'user': rhsm_login,

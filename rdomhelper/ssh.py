@@ -250,7 +250,8 @@ class SshClient(object):
                 'key_filename': self._key_filename}
 
     def add_environment_file(self, filename):
-        self._environment_filenames.append(filename)
+        if filename not in self._environment_filenames:
+            self._environment_filenames.append(filename)
 
 
 class PoolSshClient(object):

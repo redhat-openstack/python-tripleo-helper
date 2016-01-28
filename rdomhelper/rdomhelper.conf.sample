@@ -45,10 +45,6 @@ undercloud:
     repositories: *DEFAULT_REPOSITORIES
     guest_image_path: http://192.168.1.2/brewroot/packages/rhel-guest-image/7.2/20151102.0/images/rhel-guest-image-7.2-20151102.0.x86_64.qcow2
     guest_image_checksum: 486900b54f4757cb2d6b59d9bce9fe90
-
-ssh:
-    private_key: /home/dci/.ssh/id_rsa
-overcloud:
     files:
         overcloud-full:
             path: http://192.168.1.2/mburns/8.0/2015-12-03.1/images/overcloud-full.tar
@@ -59,5 +55,5 @@ overcloud:
         deploy-ramdisk-ironic:
             path: http://192.168.1.2/mburns/latest-8.0-images/deploy-ramdisk-ironic.tar
             checksum: 5c8fd42deb34831377f0bf69fbe71f4b
-    guest_image_path: http://192.168.1.2/brewroot/packages/rhel-guest-image/7.2/20151102.0/images/rhel-guest-image-7.2-20151102.0.x86_64.qcow2
-    guest_image_checksum: 486900b54f4757cb2d6b59d9bce9fe90
+ssh:
+    private_key: /home/dci/.ssh/id_rsa
