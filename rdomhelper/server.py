@@ -84,9 +84,16 @@ class Server(object):
             success_status=success_status, error_callback=error_callback,
             custom_log=custom_log)
 
+    def yum_install(self, packages, ignore_error=False):
+        return self.run('yum install -y --quiet ' + ' '.join(packages), ignore_error=ignore_error)
+
+    def yum_remove(self, packages):
+        return self.run('yum remove -y --quiet ' + ' '.join(packages))
+
     def install_nosync(self):
-        _, rc = self.run('yum install -y https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm',
-                         ignore_error=True)
+        _, rc = self.yum_install(
+            ['https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'],
+            ignore_error=True)
         if rc == 0:
             self.run('echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload')
 
@@ -134,24 +141,24 @@ class Server(object):
 
     def install_base_packages(self):
         # TODO(Gonéri): We should install chrony or ntpd
-        self.run('yum install -y yum-utils iptables libselinux-python psmisc redhat-lsb-core rsync')
+        self.yum_install(['yum-utils', 'iptables', 'libselinux-python', 'psmisc', 'redhat-lsb-core', 'rsync'])
 
     def clean_system(self):
         self.run('systemctl disable NetworkManager', success_status=(0, 1))
         self.run('systemctl stop NetworkManager', success_status=(0, 5))
         self.run('pkill -9 dhclient', success_status=(0, 1))
-        self.run('yum remove -y cloud-init NetworkManager')
+        self.yum_remove(['cloud-init', 'NetworkManager'])
         self.run('systemctl enable network')
         self.run('systemctl restart network')
 
-    def update_packages(self, allow_reboot=False):
+    def yum_update(self, allow_reboot=False):
         self.run('yum update -y')
         # reboot if a new initrd has been generated since the boot
         if allow_reboot:
             self.run('find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;')
 
     def install_osp(self):
-        self.run('yum install -y yum-plugin-priorities python-tripleoclient python-rdomanager-oscplugin')
+        self.yum_install(['yum-plugin-priorities', 'python-tripleoclient', 'python-rdomanager-oscplugin'])
 
     def set_selinux(self, state):
         allowed_states = ('enforcing', 'permissive', 'disabled')

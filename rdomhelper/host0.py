@@ -26,7 +26,7 @@ class Host0(Server):
         Server.__init__(self, **kwargs)
 
     def deploy_hypervisor(self):
-        self.run('yum install -y libvirt-daemon-driver-nwfilter libvirt-client libvirt-daemon-config-network libvirt-daemon-driver-nodedev libvirt-daemon-kvm libvirt-python libvirt-daemon-config-nwfilter libvirt-glib libvirt-daemon libvirt-daemon-driver-storage libvirt libvirt-daemon-driver-network libvirt-devel libvirt-gobject libvirt-daemon-driver-secret libvirt-daemon-driver-qemu libvirt-daemon-driver-interface libguestfs-tools.noarch virt-install genisoimage openstack-tripleo libguestfs-tools instack-undercloud')
+        self.yum_install(['libvirt-daemon-driver-nwfilter', 'libvirt-client', 'libvirt-daemon-config-network', 'libvirt-daemon-driver-nodedev', 'libvirt-daemon-kvm', 'libvirt-python', 'libvirt-daemon-config-nwfilter', 'libvirt-glib', 'libvirt-daemon', 'libvirt-daemon-driver-storage', 'libvirt', 'libvirt-daemon-driver-network', 'libvirt-devel', 'libvirt-gobject', 'libvirt-daemon-driver-secret', 'libvirt-daemon-driver-qemu', 'libvirt-daemon-driver-interface', 'libguestfs-tools.noarch', 'virt-install', 'genisoimage', 'openstack-tripleo', 'libguestfs-tools', 'instack-undercloud'])
         self.run('sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf')
         self.run('systemctl start libvirtd')
         self.run('systemctl status libvirtd')
@@ -35,7 +35,7 @@ class Host0(Server):
 
         self.install_base_packages()
         self.clean_system()
-        self.update_packages()
+        self.yum_update()
 
     def instack_virt_setup(self, guest_image_path, guest_image_checksum,
                            rhsm_login=None, rhsm_password=None):
