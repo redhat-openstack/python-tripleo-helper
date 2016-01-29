@@ -77,6 +77,8 @@ class DciHandler(logging.Handler):
             raise
 
     def _send_log_file(self):
+        if not self._dci_context.last_jobstate_id:
+            return
         jobstate_id = self._dci_context.last_jobstate_id
         dci_file.create(self._dci_context, 'chainsaw.log-%s' % self._idx_file,
                         self._current_log.getvalue(), 'text/plain',
