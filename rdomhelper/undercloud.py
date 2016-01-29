@@ -82,3 +82,14 @@ class Undercloud(Server):
                   '--ceph-storage-flavor baremetal '
                   '--block-storage-flavor baremetal '
                   '--swift-storage-flavor baremetal'), user='stack')
+
+    def run_tempest(self):
+        self.add_environment_file(user='stack', filename='overcloudrc')
+        self.run('test -d tempest || mkdir tempest', user='stack')
+        self.yum_install(['openstack-tempest-liberty'])
+        self.run('cd tempest && /usr/share/openstack-tempest-liberty/tools/configure-tempest-directory', user='stack')
+        self.run('neutron net-show ext-net || neutron net-create ext-net', user='stack')
+        self.run('neutron subnet-show ext-subnet || neutron subnet-create ext-net --name ext-subnet   --allocation-pool start=172.16.23.40,end=172.16.23.50   --disable-dhcp --gateway 172.16.23.1 172.16.23.0/24', user='stack')
+        network_id = self.run('neutron net-show ext-net -F id -f value', user='stack')[0].rstrip('\n')
+        self.run('cd tempest && tools/config_tempest.py --out etc/tempest.conf --network-id {network_id} --deployer-input ~/tempest-deployer-input.conf --debug --create --image /home/stack/guest_image.qcow2 identity.uri $OS_AUTH_URL identity.admin_password $OS_PASSWORD network.tenant_network_cidr 192.168.0.0/24 object-storage.operator_role swiftoperator compute.image_ssh_user cloud-user compute.ssh_user cloud-user scenario.ssh_user cloud-user compute.flavor_ref 2 compute.flavor_ref_alt 2'.format(network_id=network_id), user='stack')
+        self.run('cd tempest && tools/run-tests.sh tempest', user='stack')

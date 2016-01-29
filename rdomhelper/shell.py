@@ -162,6 +162,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
             config['undercloud']['files'],
         )
         vm_undercloud.start_overcloud()
+        vm_undercloud.run_tempest()
         dcijobstate.create(dci_context, 'success', 'Job succeed :-)', job_id)
     except Exception as e:
         if host0:
