@@ -14,7 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from tripleowrapper.provisioners.openstack import utils
+from rdomhelper.provisioners.openstack import utils
 
 import mock
 from novaclient import client as nova_client

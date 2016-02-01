@@ -14,15 +14,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from tripleowrapper import server
-from tripleowrapper.tests.commands import server as server_cmds
-from tripleowrapper.tests import server_mock_methods as s_m
+from rdomhelper import server
+from rdomhelper.tests.commands import server as server_cmds
+from rdomhelper.tests import server_mock_methods as s_m
 
 import mock
 
 
-@mock.patch("tripleowrapper.server.ssh.PoolSshClient")
-@mock.patch("tripleowrapper.server.ssh.SshClient")
+@mock.patch("rdomhelper.server.ssh.PoolSshClient")
+@mock.patch("rdomhelper.server.ssh.SshClient")
 def test_create_user(mock_pool_ssh, mock_ssh_client):
     test_server = server.Server('toto', 'titi')
 
@@ -34,8 +34,8 @@ def test_create_user(mock_pool_ssh, mock_ssh_client):
     assert server_cmds.CREATE_STACK_USER_CREATE_FILE == test_server.create_file.call_list()
 
 
-@mock.patch("tripleowrapper.server.ssh.PoolSshClient")
-@mock.patch("tripleowrapper.server.ssh.SshClient")
+@mock.patch("rdomhelper.server.ssh.PoolSshClient")
+@mock.patch("rdomhelper.server.ssh.SshClient")
 def test_rhsm_register(mock_pool_ssh, mock_ssh_client):
     test_server = server.Server('toto', 'titi')
     test_server.run = s_m.MockServerRun()

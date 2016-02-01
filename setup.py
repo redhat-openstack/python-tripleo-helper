@@ -18,7 +18,7 @@
 import os
 import setuptools
 
-from tripleowrapper import version
+from rdomhelper import version
 
 
 def _get_requirements():
@@ -32,19 +32,19 @@ _README_CONTENT = open("%s/%s" % (os.path.dirname(os.path.abspath(__file__)),
                                   "README.md")).read()
 
 setuptools.setup(
-    name='python-tripleowrapper',
+    name='python-rdo-m-helper',
     version=version.__version__,
     packages=setuptools.find_packages(),
     author="Red Hat ci team.",
     author_email="distributed-ci@redhat.com",
-    description="A Python wrapper to drive a TripleO based installer.",
+    description="A Python helper to drive a TripleO based installer.",
     long_description=_README_CONTENT,
     install_requires=_get_requirements(),
     dependency_links=[
         "https://github.com/redhat-cip/python-dciclient.git"
         "#egg=python-dciclient"
     ],
-    url="https://github.com/redhat-cip/python-tripleo-wrapper",
+    url="https://github.com/redhat-cip/python-rdo-m-helper",
     licence="Apache v2.0",
     include_package_data=True,
     classifiers=[
@@ -59,7 +59,7 @@ setuptools.setup(
     ],
     entry_points={
         "console_scripts": [
-            "chainsaw = tripleowrapper.shell:main"
+            "chainsaw = rdomhelper.shell:main"
         ],
     }
 )

@@ -17,7 +17,7 @@
 
 import logging
 
-from tripleowrapper import ssh
+from rdomhelper import ssh
 
 LOG = logging.getLogger('__chainsaw__')
 

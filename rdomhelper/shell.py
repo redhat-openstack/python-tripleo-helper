@@ -22,16 +22,17 @@ import datetime
 import logging
 import os
 import sys
+import traceback
 
 from dciclient.v1.api import context as dcicontext
 from dciclient.v1.api import job as dcijob
 from dciclient.v1.api import jobstate as dcijobstate
 
-import tripleowrapper.host0
-from tripleowrapper import logger
-from tripleowrapper.provisioners.openstack import os_libvirt
-from tripleowrapper.provisioners.openstack import utils as os_utils
-from tripleowrapper import undercloud
+import rdomhelper.host0
+from rdomhelper import logger
+from rdomhelper.provisioners.openstack import os_libvirt
+from rdomhelper.provisioners.openstack import utils as os_utils
+from rdomhelper import undercloud
 
 
 LOG = logging.getLogger('__chainsaw__')
@@ -75,9 +76,9 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
             LOG.error("instance '%s' failed" % instance_name)
             sys.exit(1)
 
-        host0 = tripleowrapper.host0.Host0(hostname=host0_ip,
-                                           user=config['provisioner']['image'].get('user', 'root'),
-                                           key_filename=config['ssh']['private_key'])
+        host0 = rdomhelper.host0.Host0(hostname=host0_ip,
+                                       user=config['provisioner']['image'].get('user', 'root'),
+                                       key_filename=config['ssh']['private_key'])
         host0.rhsm_register(
             config['rhsm']['login'],
             config['rhsm'].get('password', os.environ.get('RHN_PW')),
@@ -120,9 +121,9 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
     try:
         if host0_ip:
             dcijobstate.create(dci_context, status, 'Reusing existing host0', job_id)
-            host0 = tripleowrapper.host0.Host0(hostname=host0_ip,
-                                               user=config['provisioner']['image'].get('user', 'root'),
-                                               key_filename=ssh['private_key'])
+            host0 = rdomhelper.host0.Host0(hostname=host0_ip,
+                                           user=config['provisioner']['image'].get('user', 'root'),
+                                           key_filename=ssh['private_key'])
             if undercloud_ip:
                 dcijobstate.create(dci_context, status, 'Reusing existing undercloud', job_id)
                 vm_undercloud = undercloud.Undercloud(undercloud_ip,
@@ -158,6 +159,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
         vm_undercloud.start_overcloud()
         dcijobstate.create(dci_context, 'success', 'Job succeed :-)', job_id)
     except Exception as e:
+        LOG.error(traceback.format_exc())
         dcijobstate.create(dci_context, 'failure', 'Job failed :-(', job_id)
         raise e
 

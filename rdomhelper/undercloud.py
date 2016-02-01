@@ -14,7 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from tripleowrapper.server import Server
+from rdomhelper.server import Server
 
 
 class Undercloud(Server):
