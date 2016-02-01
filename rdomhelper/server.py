@@ -25,7 +25,7 @@ LOG = logging.getLogger('__chainsaw__')
 class Server(object):
     def __init__(self, hostname, user='root', via_ip=None, key_filename=None,
                  redirect_to_host=None):
-        self._hostname = hostname
+        self.hostname = hostname
         self._key_filename = key_filename
         self._via_ip = via_ip
         self._ssh_pool = ssh.PoolSshClient()
@@ -36,7 +36,7 @@ class Server(object):
         """Enable the root account on the remote host."""
 
         _root_ssh_client = ssh.SshClient(
-            hostname=self._hostname,
+            hostname=self.hostname,
             user='root',
             key_filename=self._key_filename,
             via_ip=self._via_ip)
@@ -59,7 +59,7 @@ class Server(object):
         LOG.info('enabling the root user')
         # add the cloud user to the ssh pool
         self._ssh_pool.build_ssh_client(
-            hostname=self._hostname,
+            hostname=self.hostname,
             user=image_user,
             key_filename=self._key_filename,
             via_ip=self._via_ip)
@@ -123,7 +123,7 @@ class Server(object):
         self.run('chown -R stack:stack /home/stack/.ssh')
         self.run('chmod 700 /home/stack/.ssh')
         self.run('chmod 600 /home/stack/.ssh/authorized_keys')
-        self._ssh_pool.build_ssh_client(self._hostname, 'stack',
+        self._ssh_pool.build_ssh_client(self.hostname, 'stack',
                                         self._key_filename,
                                         self._via_ip)
 

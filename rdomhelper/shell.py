@@ -156,9 +156,22 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
         vm_undercloud.clean_system()
         vm_undercloud.update_packages()
         vm_undercloud.install_osp()
+        vm_undercloud.start_undercloud(
+            config['undercloud']['guest_image_path'],
+            config['undercloud']['guest_image_checksum'],
+            config['undercloud']['files'],
+        )
         vm_undercloud.start_overcloud()
         dcijobstate.create(dci_context, 'success', 'Job succeed :-)', job_id)
     except Exception as e:
+        if host0:
+            LOG.info('___________')
+            cmd = 'You can start from you current possition with the following command: '
+            cmd += 'chainsaw --config-file %s --host0-ip %s' % (config_file.name, host0.hostname)
+            if vm_undercloud:
+                cmd += ' --undercloud-ip %s' % vm_undercloud.hostname
+            LOG.info(cmd)
+            LOG.info('___________')
         LOG.error(traceback.format_exc())
         dcijobstate.create(dci_context, 'failure', 'Job failed :-(', job_id)
         raise e
