@@ -25,6 +25,7 @@ LOG = logging.getLogger('__chainsaw__')
 class Server(object):
     def __init__(self, hostname, user='root', via_ip=None, key_filename=None,
                  redirect_to_host=None):
+        assert hostname
         self.hostname = hostname
         self._key_filename = key_filename
         self._via_ip = via_ip

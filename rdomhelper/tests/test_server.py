@@ -14,35 +14,51 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import pytest
+
 from rdomhelper import server
-from rdomhelper.tests.commands import server as server_cmds
-from rdomhelper.tests import server_mock_methods as s_m
-
-import mock
 
 
-@mock.patch("rdomhelper.server.ssh.PoolSshClient")
-@mock.patch("rdomhelper.server.ssh.SshClient")
-def test_create_user(mock_pool_ssh, mock_ssh_client):
+expectation = [
+    {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}},
+    {'func': 'run', 'args': {'cmd': 'adduser -m stack'}},
+    {'func': 'create_file', 'args': {'path': '/etc/sudoers.d/stack', 'content': 'stack ALL=(root) NOPASSWD:ALL\n'}},
+    {'func': 'run', 'args': {'cmd': 'mkdir -p /home/stack/.ssh'}},
+    {'func': 'run', 'args': {'cmd': 'cp /root/.ssh/authorized_keys /home/stack/.ssh/authorized_keys'}},
+    {'func': 'run', 'args': {'cmd': 'chown -R stack:stack /home/stack/.ssh'}},
+    {'func': 'run', 'args': {'cmd': 'chmod 700 /home/stack/.ssh'}},
+    {'func': 'run', 'args': {'cmd': 'chmod 600 /home/stack/.ssh/authorized_keys'}},
+]
+
+
+@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+def test_create_user(fake_sshclient):
     test_server = server.Server('toto', 'titi')
-
-    test_server.run = s_m.MockServerRun()
-    test_server.create_file = s_m.MockServerCreateFile()
     test_server.create_stack_user()
 
-    assert server_cmds.CREATE_STACK_USER_RUN == test_server.run.call_list()
-    assert server_cmds.CREATE_STACK_USER_CREATE_FILE == test_server.create_file.call_list()
+
+expectation = [
+    {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}},
+    {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password pass'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager attach --auto'}},
+]
 
 
-@mock.patch("rdomhelper.server.ssh.PoolSshClient")
-@mock.patch("rdomhelper.server.ssh.SshClient")
-def test_rhsm_register(mock_pool_ssh, mock_ssh_client):
+@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+def test_rhsm_register(fake_sshclient):
     test_server = server.Server('toto', 'titi')
-    test_server.run = s_m.MockServerRun()
-
     test_server.rhsm_register('login', 'pass')
-    assert server_cmds.RHSM_REGISTER == test_server.run.call_list()
 
-    test_server.run.clear()
+expectation = [
+    {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}},
+    {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password pass'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager attach --pool pool_id'}},
+]
+
+
+@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+def test_rhsm_register_with_pool_id(fake_sshclient):
+    test_server = server.Server('toto', 'titi')
     test_server.rhsm_register('login', 'pass', 'pool_id')
-    assert server_cmds.RHSM_REGISTER_POOL_ID == test_server.run.call_list()

@@ -196,9 +196,17 @@ class SshClient(object):
                     cmd_output.write(received)
         cmd_output = cmd_output.getvalue()
         exit_status = channel.exit_status
+        return self._evaluate_run_result(
+            exit_status, cmd_output, ignore_error=ignore_error,
+            success_status=success_status, error_callback=error_callback,
+            custom_log=custom_log)
 
-        if ignore_error or channel.exit_status in success_status:
-            return cmd_output, channel.exit_status
+    def _evaluate_run_result(
+            self, exit_status, cmd_output, ignore_error=False, success_status=(0,),
+            error_callback=None, custom_log=None):
+
+        if ignore_error or exit_status in success_status:
+            return cmd_output, exit_status
         elif error_callback:
             return error_callback(cmd_output, exit_status)
         else:

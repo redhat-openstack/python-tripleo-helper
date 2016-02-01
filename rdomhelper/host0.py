@@ -69,7 +69,8 @@ class Host0(Server):
         undercloud_ip = self.run(
             '/sbin/ip n | grep $(tripleo get-vm-mac instack) | awk \'{print $1;}\'',
             user='stack')[0]
-        undercloud = Undercloud(undercloud_ip,
+        assert undercloud_ip, 'undercloud should have an IP'
+        undercloud = Undercloud(hostname=undercloud_ip,
                                 via_ip=self.hostname,
                                 user='root',
                                 key_filename=self._key_filename)

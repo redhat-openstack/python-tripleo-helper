@@ -22,12 +22,8 @@ LOG = logging.getLogger('__chainsaw__')
 
 
 class Undercloud(Server):
-    def __init__(self, undercloud_ip, user, via_ip=None, key_filename=None):
-        Server.__init__(self,
-                        hostname=undercloud_ip,
-                        user=user,
-                        via_ip=via_ip,
-                        key_filename=key_filename)
+    def __init__(self, **kwargs):
+        Server.__init__(self, **kwargs)
 
     def start_undercloud(self, guest_image_path, guest_image_checksum, files):
         for name, file in files.items():
