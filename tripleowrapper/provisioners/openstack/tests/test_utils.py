@@ -64,3 +64,31 @@ def test_build_nova_api(mock_nova_client):
                                         username='username',
                                         api_key='password',
                                         project_id='tenant')
+
+
+def test_get_a_floating_ip(nova_api):
+    assert utils.get_a_floating_ip(nova_api) is not None
+
+    nova_api.floating_ips.list()[0].instance_id = "instance_id"
+    assert utils.get_a_floating_ip(nova_api) is None
+
+    nova_api.floating_ips.list()[0].instance_id = None
+    nova_api.floating_ips.list()[0].fixed_ip = "fixed_ip"
+
+
+def test_add_a_floating_ip(nova_api):
+    mock_instance = mock.Mock()
+    mock_instance.add_floating_ip = mock.Mock()
+    ip = utils.add_a_floating_ip(nova_api, mock_instance)
+    mock_instance.add_floating_ip.assert_called_with('46.231.123.123')
+    assert ip == '46.231.123.123'
+
+
+def test_add_security_groups():
+    test_instance = mock.Mock()
+    test_instance.add_security_group = mock.Mock()
+    test_sgs = [mock.Mock(), mock.Mock()]
+    utils.add_security_groups(test_instance, test_sgs)
+
+    test_instance.add_security_group.assert_called_with(test_sgs[1])
+    assert test_instance.add_security_group.call_count == 2
