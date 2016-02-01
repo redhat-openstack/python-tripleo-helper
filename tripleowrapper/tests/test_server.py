@@ -22,7 +22,8 @@ import mock
 
 
 @mock.patch("tripleowrapper.server.ssh.PoolSshClient")
-def test_create_user(mock_pool_ssh):
+@mock.patch("tripleowrapper.server.ssh.SshClient")
+def test_create_user(mock_pool_ssh, mock_ssh_client):
     test_server = server.Server('toto', 'titi')
 
     test_server.run = s_m.MockServerRun()
@@ -34,7 +35,8 @@ def test_create_user(mock_pool_ssh):
 
 
 @mock.patch("tripleowrapper.server.ssh.PoolSshClient")
-def test_rhsm_register(mock_pool_ssh):
+@mock.patch("tripleowrapper.server.ssh.SshClient")
+def test_rhsm_register(mock_pool_ssh, mock_ssh_client):
     test_server = server.Server('toto', 'titi')
     test_server.run = s_m.MockServerRun()
 

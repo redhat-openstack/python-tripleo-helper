@@ -93,7 +93,7 @@ class DciHandler(logging.Handler):
             if len(self._current_log.getvalue()) > 0:
                 self._send_log_file()
             return
-        msg = "%s\n" % self.format(record)
+        msg = u"%s\n" % self.format(record)
         self._current_log.write(msg)
         #  if its an error then send the log
         if record.levelno == logging.ERROR:

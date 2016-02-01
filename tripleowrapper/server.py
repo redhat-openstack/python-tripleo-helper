@@ -30,44 +30,42 @@ class Server(object):
         self._via_ip = via_ip
         self._ssh_pool = ssh.PoolSshClient()
         self._redirect_to_host = redirect_to_host
+        self.__enable_root_user(user)
 
-        if user == 'root':
-            self.__enable_root_user()
-        else:
-            self._ssh_pool.build_ssh_client(
-                hostname, user, key_filename,
-                redirect_to_host)
-
-    def __enable_root_user(self):
+    def __enable_root_user(self, user):
         """Enable the root account on the remote host."""
-        # connect as a root user
+
         _root_ssh_client = ssh.SshClient(
             hostname=self._hostname,
             user='root',
             key_filename=self._key_filename,
             via_ip=self._via_ip)
-        _root_ssh_client.start()
-        result, _ = _root_ssh_client.run('uname -a')
 
-        # check if root is not allowed
-        user = None
-        if 'Please login as the user "cloud-user"' in result:
-            user = 'cloud-user'
-            _root_ssh_client.stop()
+        if user == 'root':
+            # connect as a root user
+            _root_ssh_client.start()
+            result, _ = _root_ssh_client.run('uname -a')
+
+            # check if root is not allowed
+            if 'Please login as the user "cloud-user"' in result:
+                image_user = 'cloud-user'
+                _root_ssh_client.stop()
+            else:
+                self._ssh_pool.add_ssh_client('root', _root_ssh_client)
+                return
         else:
-            self._ssh_pool.add_ssh_client('root', _root_ssh_client)
-            return
+            image_user = user
 
         LOG.info('enabling the root user')
         # add the cloud user to the ssh pool
         self._ssh_pool.build_ssh_client(
             hostname=self._hostname,
-            user=user,
+            user=image_user,
             key_filename=self._key_filename,
             via_ip=self._via_ip)
         # enable the root user
         _cmd = "sudo sed -i 's,.*ssh-rsa,ssh-rsa,' /root/.ssh/authorized_keys"
-        self._ssh_pool.run(user, _cmd)
+        self._ssh_pool.run(image_user, _cmd)
 
         # add the root user to the ssh pool
         _root_ssh_client.start()
