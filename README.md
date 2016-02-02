@@ -1,4 +1,4 @@
-# Openstack TripleO-Wrapper
+# Openstack Python-RDO-M-Helper
 
 ## Usage
 

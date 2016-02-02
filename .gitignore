@@ -11,4 +11,6 @@ password
 .cache
 .coverage
 htmlcov
+docs/_*
+docs/build
 
