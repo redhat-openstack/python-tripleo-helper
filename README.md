@@ -1,5 +1,10 @@
 # Openstack Python-RDO-M-Helper
 
+## Docs
+
+[http://rdo-m-helper.readthedocs.org](http://rdo-m-helper.readthedocs.org)
+
+
 ## Usage
 
 ### 1. Source your Openstack openrc file
