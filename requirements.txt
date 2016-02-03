@@ -3,4 +3,3 @@ paramiko==1.16.0
 python-novaclient
 PyYAML>=3.0, <4.0
 jinja2
--e git+https://github.com/redhat-cip/python-dciclient.git#egg=python-dciclient

@@ -9,7 +9,13 @@ class FakeSshClient(rdomhelper.ssh.SshClient):
     expectation = []
 
     def __init__(self, hostname, user, key_filename, via_ip):
+        class Client(object):
+            def close(self):
+                pass
         self.hostname = hostname
+        self._environment_filenames = []
+        self._client = Client()
+        self.description = 'not started yet'
 
     def load_private_key(self, f):
         pass
@@ -18,24 +24,24 @@ class FakeSshClient(rdomhelper.ssh.SshClient):
         pass
 
     def run(self, cmd, **kwargs):
-        kwargs['cmd'] = cmd
-        defaults = {
-            'sudo': False,
-            'custom_log': None,
-            'success_status': (0,),
-            'error_callback': None,
-            'ignore_error': False
-        }
+        kwargs['cmd'] = self._prepare_cmd(cmd, sudo=kwargs.get('sudo', False))
         assert FakeSshClient.expectation
         current_expection = FakeSshClient.expectation.pop(0)
         assert current_expection['func'] == 'run'
 
-        for k, v in defaults.items():
-            if k not in current_expection:
-                if k in kwargs:
-                    del kwargs[k]
-
-        assert current_expection['args'] == kwargs
+        # We do not make mandatory to declare in the expectation all the
+        # parameters
+        ignore_parameters = (
+            'sudo',
+            'custom_log',
+            'success_status',
+            'error_callback',
+            'ignore_error')
+        kwargs_to_compare = {}
+        for k, v in kwargs.items():
+            if k not in ignore_parameters:
+                kwargs_to_compare[k] = v
+        assert current_expection['args'] == kwargs_to_compare
 
         cmd_output, exit_status = current_expection.get('res', ('', 0))
         return self._evaluate_run_result(
@@ -61,3 +67,7 @@ class FakeSshClient(rdomhelper.ssh.SshClient):
 def fake_sshclient(monkeypatch, request):
     FakeSshClient.expectation = copy.deepcopy(request.param)
     monkeypatch.setattr('rdomhelper.ssh.SshClient', FakeSshClient)
+
+    def fin():
+        assert not FakeSshClient.expectation, 'Some expectations remain unevaluated'
+    request.addfinalizer(fin)

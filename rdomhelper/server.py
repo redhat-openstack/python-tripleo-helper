@@ -135,7 +135,7 @@ class Server(object):
                                         self._key_filename,
                                         self._via_ip)
 
-    def fetch_image(self, path, checksum, dest, user=None):
+    def fetch_image(self, path, checksum, dest, user='root'):
         self.create_file("%s.md5" % dest, '%s %s\n' % (checksum, dest))
         if self.run('md5sum -c %s.md5' % dest, user=user, ignore_error=True)[1] != 0:
             self.run('curl -o %s %s' % (dest, path), user=user)

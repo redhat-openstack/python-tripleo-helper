@@ -24,10 +24,6 @@ import os
 import sys
 import traceback
 
-from dciclient.v1.api import context as dcicontext
-from dciclient.v1.api import job as dcijob
-from dciclient.v1.api import jobstate as dcijobstate
-
 import rdomhelper.host0
 from rdomhelper import logger
 from rdomhelper.provisioners.openstack import os_libvirt
@@ -86,6 +82,21 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
         return host0
 
 
+def configure_undercloud(undercloud, repositories, guest_image_path, guest_image_checksum, files):
+    undercloud.enable_repositories(repositories)
+    undercloud.install_nosync()
+    undercloud.create_stack_user()
+    undercloud.install_base_packages()
+    undercloud.clean_system()
+    undercloud.yum_update()
+    undercloud.install_osp()
+    undercloud.start_undercloud(
+        guest_image_path,
+        guest_image_checksum,
+        files)
+    undercloud.start_overcloud()
+
+
 @click.command()
 @click.option('--os-auth-url', envvar='OS_AUTH_URL', required=True,
               help="Keystone auth url.")
@@ -107,36 +118,22 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
     host0 = None
     vm_undercloud = None
 
-    dci_context = dcicontext.build_dci_context(
-        config['dci']['control_server_url'],
-        config['dci']['login'],
-        config['dci']['password'])
-    logger.setup_logging(dci_context)
-
-    status = 'pre-run'
-    job = dcijob.schedule(dci_context,
-                          remoteci_id=config['dci']['remoteci_id']).json()
-    job_id = job['job']['id']
-
+    logger.setup_logging()
     try:
         if host0_ip:
-            dcijobstate.create(dci_context, status, 'Reusing existing host0', job_id)
             host0 = rdomhelper.host0.Host0(hostname=host0_ip,
                                            user=config['provisioner']['image'].get('user', 'root'),
                                            key_filename=ssh['private_key'])
             if undercloud_ip:
-                dcijobstate.create(dci_context, status, 'Reusing existing undercloud', job_id)
-                vm_undercloud = undercloud.Undercloud(undercloud_ip,
+                vm_undercloud = undercloud.Undercloud(hostname=undercloud_ip,
                                                       user='root',
                                                       via_ip=host0_ip,
                                                       key_filename=ssh['private_key'])
         if not host0:
-            dcijobstate.create(dci_context, status, 'Creating the host0', job_id)
             host0 = deploy_host0(os_auth_url, os_username, os_password,
                                  os_tenant_name, config)
 
         if not vm_undercloud:
-            dcijobstate.create(dci_context, status, 'Creating the undercloud', job_id)
             host0.enable_repositories(config['provisioner']['repositories'])
             host0.install_nosync()
             host0.create_stack_user()
@@ -147,23 +144,13 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
                 rhsm_login=config['rhsm']['login'],
                 rhsm_password=config['rhsm'].get('password', os.environ.get('RHN_PW')))
 
-        status = 'running'
-        dcijobstate.create(dci_context, status, 'Configuring the undercloud', job_id)
-        vm_undercloud.enable_repositories(config['undercloud']['repositories'])
-        vm_undercloud.install_nosync()
-        vm_undercloud.create_stack_user()
-        vm_undercloud.install_base_packages()
-        vm_undercloud.clean_system()
-        vm_undercloud.update_packages()
-        vm_undercloud.install_osp()
-        vm_undercloud.start_undercloud(
+        configure_undercloud(
+            vm_undercloud,
+            config['undercloud']['repositories'],
             config['undercloud']['guest_image_path'],
             config['undercloud']['guest_image_checksum'],
-            config['undercloud']['files'],
-        )
-        vm_undercloud.start_overcloud()
+            config['undercloud']['files'])
         vm_undercloud.run_tempest()
-        dcijobstate.create(dci_context, 'success', 'Job succeed :-)', job_id)
     except Exception as e:
         if host0:
             LOG.info('___________')
@@ -174,7 +161,6 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
             LOG.info(cmd)
             LOG.info('___________')
         LOG.error(traceback.format_exc())
-        dcijobstate.create(dci_context, 'failure', 'Job failed :-(', job_id)
         raise e
 
 # This is for setuptools entry point.

@@ -147,6 +147,14 @@ class SshClient(object):
         self._started = False
         self._client.close()
 
+    def _prepare_cmd(self, cmd, sudo=False):
+        if sudo:
+            cmd = "sudo %s" % cmd
+        else:
+            for filename in self._environment_filenames:
+                cmd = '. %s; %s' % (filename, cmd)
+        return cmd
+
     def run(self, cmd, sudo=False, ignore_error=False, success_status=(0,),
             error_callback=None, custom_log=None):
         """Run a command on the remote host.
@@ -173,12 +181,7 @@ class SshClient(object):
         self._check_started()
         cmd_output = io.StringIO()
         channel = self._get_channel()
-
-        if sudo:
-            cmd = "sudo %s" % cmd
-        else:
-            for filename in self._environment_filenames:
-                cmd = '. %s; %s' % (filename, cmd)
+        cmd = self._prepare_cmd(cmd, sudo=sudo)
 
         if not custom_log:
             custom_log = cmd

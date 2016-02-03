@@ -26,10 +26,10 @@ class Undercloud(Server):
         Server.__init__(self, **kwargs)
 
     def start_undercloud(self, guest_image_path, guest_image_checksum, files):
-        for name, file in files.items():
+        for name in sorted(files):
             self.fetch_image(
-                path=file['path'],
-                checksum=file['checksum'],
+                path=files[name]['path'],
+                checksum=files[name]['checksum'],
                 dest='/home/stack/%s.tar' % name,
                 user='stack')
             self.run('tar xf /home/stack/%s.tar' % name,
@@ -62,22 +62,22 @@ class Undercloud(Server):
     def start_overcloud(self):
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal', user='stack')
-        self.run('for uuid in $(ironic node-list|awk \'/available/ {print$2}\'); do ironic node-update $uuid add properties/capabilities=profile:baremetal,boot_option:local; done', user='stack')
-        self.run(('openstack overcloud deploy --debug '
-                  '--templates '
-                  '--log-file overcloud_deployment.log '
-                  '--libvirt-type=qemu '
-                  '--ntp-server north-america.pool.ntp.org '
-                  '--control-scale 1 '
-                  '--compute-scale 1 '
-                  '--ceph-storage-scale 0 '
-                  '--block-storage-scale 0 '
-                  '--swift-storage-scale 0 '
-                  '--control-flavor baremetal '
-                  '--compute-flavor baremetal '
-                  '--ceph-storage-flavor baremetal '
-                  '--block-storage-flavor baremetal '
-                  '--swift-storage-flavor baremetal'), user='stack')
+        self.run('for uuid in $(ironic node-list|awk \'/available/ {print $2}\'); do ironic node-update $uuid add properties/capabilities=profile:baremetal,boot_option:local; done', user='stack')
+        self.run('openstack overcloud deploy --debug ' +
+                 '--templates ' +
+                 '--log-file overcloud_deployment.log ' +
+                 '--libvirt-type=qemu ' +
+                 '--ntp-server north-america.pool.ntp.org ' +
+                 '--control-scale 1 ' +
+                 '--compute-scale 1 ' +
+                 '--ceph-storage-scale 0 ' +
+                 '--block-storage-scale 0 ' +
+                 '--swift-storage-scale 0 ' +
+                 '--control-flavor baremetal ' +
+                 '--compute-flavor baremetal ' +
+                 '--ceph-storage-flavor baremetal ' +
+                 '--block-storage-flavor baremetal ' +
+                 '--swift-storage-flavor baremetal', user='stack')
 
     def run_tempest(self):
         self.add_environment_file(user='stack', filename='overcloudrc')
