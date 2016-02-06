@@ -32,18 +32,6 @@ files = {
 
 expectation_start_undercloud = [
     {'func': 'create_file', 'args': {
-        'path': '/home/stack/deploy-ramdisk-ironic.tar.md5',
-        'content': '5c8fd42deb34831377f0bf69fbe71f4b /home/stack/deploy-ramdisk-ironic.tar\n'
-    }},
-    {'func': 'run', 'args': {'cmd': 'md5sum -c /home/stack/deploy-ramdisk-ironic.tar.md5'}},
-    {'func': 'run', 'args': {'cmd': 'tar xf /home/stack/deploy-ramdisk-ironic.tar'}},
-    {'func': 'create_file', 'args': {
-        'path': '/home/stack/overcloud-full.tar.md5',
-        'content': 'e88968c81703fbcf6dbc8623997f6a84 /home/stack/overcloud-full.tar\n'
-    }},
-    {'func': 'run', 'args': {'cmd': 'md5sum -c /home/stack/overcloud-full.tar.md5'}},
-    {'func': 'run', 'args': {'cmd': 'tar xf /home/stack/overcloud-full.tar'}},
-    {'func': 'create_file', 'args': {
         'path': '/home/stack/guest_image.qcow2.md5',
         'content': 'acaf294494448266313343dec91ce91a /home/stack/guest_image.qcow2\n'
     }},
@@ -62,10 +50,6 @@ expectation_start_undercloud = [
     {'func': 'run', 'args': {'cmd': 'systemctl start openstack-ironic-api.service'}},
     {'func': 'run', 'args': {'cmd': 'openstack undercloud install'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; heat stack-list'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack overcloud image upload'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal import --json instackenv.json'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal configure boot'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal'}},
 ]
 
 expectation = [
@@ -80,10 +64,26 @@ def test_start_undercloud(fake_sshclient):
     test_undercloud._ssh_pool.build_ssh_client(
         test_undercloud.hostname, 'stack', None, None)
     test_undercloud.start_undercloud(
-        'http://host/guest_image_path.qcow2', 'acaf294494448266313343dec91ce91a', files)
+        'http://host/guest_image_path.qcow2', 'acaf294494448266313343dec91ce91a')
 
 
 expectation_start_overcloud = [
+    {'func': 'create_file', 'args': {
+        'path': '/home/stack/deploy-ramdisk-ironic.tar.md5',
+        'content': '5c8fd42deb34831377f0bf69fbe71f4b /home/stack/deploy-ramdisk-ironic.tar\n'
+    }},
+    {'func': 'run', 'args': {'cmd': '. stackrc; md5sum -c /home/stack/deploy-ramdisk-ironic.tar.md5'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; tar xf /home/stack/deploy-ramdisk-ironic.tar'}},
+    {'func': 'create_file', 'args': {
+        'path': '/home/stack/overcloud-full.tar.md5',
+        'content': 'e88968c81703fbcf6dbc8623997f6a84 /home/stack/overcloud-full.tar\n'
+    }},
+    {'func': 'run', 'args': {'cmd': '. stackrc; md5sum -c /home/stack/overcloud-full.tar.md5'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; tar xf /home/stack/overcloud-full.tar'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; openstack overcloud image upload'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal import --json instackenv.json'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal configure boot'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; for uuid in $(ironic node-list|awk \'/available/ {print $2}\'); do ironic node-update $uuid add properties/capabilities=profile:baremetal,boot_option:local; done'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack overcloud deploy --debug ' +
@@ -100,7 +100,8 @@ expectation_start_overcloud = [
                              '--compute-flavor baremetal ' +
                              '--ceph-storage-flavor baremetal ' +
                              '--block-storage-flavor baremetal ' +
-                             '--swift-storage-flavor baremetal'}}
+                             '--swift-storage-flavor baremetal'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; test -f overcloudrc'}},
 
 ]
 
@@ -115,7 +116,7 @@ def test_start_overcloud(fake_sshclient):
     # TODO(Gonéri): manually create the connection 'stack' in the pool
     test_undercloud._ssh_pool.build_ssh_client(
         test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.start_overcloud()
+    test_undercloud.start_overcloud(files)
 
 
 expectation_run_tempest = [

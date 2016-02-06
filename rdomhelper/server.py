@@ -120,8 +120,8 @@ class Server(object):
             subscription_cmd = "subscription-manager repos '--disable=*' --enable=" + ' --enable='.join(rhsm_channels)
             self.run(subscription_cmd)
 
-        for repo_files in repo_files:
-            self.create_file(repo_files['dest'], repo_files['content'])
+        for repo_file in repo_files:
+            self.create_file(repo_file['dest'], repo_file['content'])
 
     def create_stack_user(self):
         self.run('adduser -m stack', success_status=(0, 9))

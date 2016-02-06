@@ -92,9 +92,8 @@ def configure_undercloud(undercloud, repositories, guest_image_path, guest_image
     undercloud.install_osp()
     undercloud.start_undercloud(
         guest_image_path,
-        guest_image_checksum,
-        files)
-    undercloud.start_overcloud()
+        guest_image_checksum)
+    undercloud.start_overcloud(files)
 
 
 @click.command()
@@ -149,7 +148,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
             config['undercloud']['repositories'],
             config['undercloud']['guest_image_path'],
             config['undercloud']['guest_image_checksum'],
-            config['undercloud']['files'])
+            config['undercloud'].get('files', []))
         vm_undercloud.run_tempest()
     except Exception as e:
         if host0:

@@ -30,8 +30,6 @@ class Host0(Server):
         self.run('sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf')
         self.run('systemctl start libvirtd')
         self.run('systemctl status libvirtd')
-        self.run('mkdir -p /home/stack/DIB')
-        self.run('find /etc/yum.repos.d/ -type f -exec cp -v {} /home/stack/DIB \;')
 
         self.install_base_packages()
         self.clean_system()
@@ -50,9 +48,14 @@ class Host0(Server):
         env = Environment()
         env.loader = FileSystemLoader('templates')
         template = env.get_template('virt-setup-env.j2')
+        self.run('mkdir -p /home/stack/DIB', user='stack')
+        self.run('cp -v /etc/yum.repos.d/*.repo /home/stack/DIB', user='stack')
+        # NOTE(Gonéri): Hack to be sure DIB won't complain because of missing gpg files
+#        self.run('sed -i "s,gpgcheck=1,gpgcheck=0," /home/stack/DIB/*.repo', user='stack')
+        dib_yum_repo_conf = self.run('find /home/stack/DIB -type f', user='stack')[0].split()
         virt_setup_env = template.render(
             {
-                'dib_dir': '/home/stack/DIB',
+                'dib_yum_repo_conf': dib_yum_repo_conf,
                 'node': {
                     'count': 2,
                     'mem': 6144,
@@ -65,6 +68,8 @@ class Host0(Server):
                     'password': rhsm_password
                 }})
         self.create_file('virt-setup-env', virt_setup_env, user='stack')
+        self.run('virsh destroy instack', ignore_error=True)
+        self.run('virsh undefine instack --remove-all-storage', ignore_error=True)
         self.run('source virt-setup-env; instack-virt-setup', user='stack')
         undercloud_ip = self.run(
             '/sbin/ip n | grep $(tripleo get-vm-mac instack) | awk \'{print $1;}\'',

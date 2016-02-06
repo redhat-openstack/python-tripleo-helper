@@ -25,7 +25,7 @@ class Undercloud(Server):
     def __init__(self, **kwargs):
         Server.__init__(self, **kwargs)
 
-    def start_undercloud(self, guest_image_path, guest_image_checksum, files):
+    def _retrieve_prebuilt_files(self, files):
         for name in sorted(files):
             self.fetch_image(
                 path=files[name]['path'],
@@ -34,6 +34,8 @@ class Undercloud(Server):
                 user='stack')
             self.run('tar xf /home/stack/%s.tar' % name,
                      user='stack')
+
+    def start_undercloud(self, guest_image_path, guest_image_checksum):
         self.fetch_image(
             path=guest_image_path,
             checksum=guest_image_checksum,
@@ -54,13 +56,14 @@ class Undercloud(Server):
         self.run('openstack undercloud install', user='stack')
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('heat stack-list', user='stack')
+
+    def start_overcloud(self, files):
+        self.add_environment_file(user='stack', filename='stackrc')
+        self._retrieve_prebuilt_files(files)
         self.run('openstack overcloud image upload', user='stack')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
         self.run('openstack baremetal configure boot', user='stack')
         self.run('openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal', user='stack', success_status=(0, 1))
-
-    def start_overcloud(self):
-        self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal', user='stack')
         self.run('for uuid in $(ironic node-list|awk \'/available/ {print $2}\'); do ironic node-update $uuid add properties/capabilities=profile:baremetal,boot_option:local; done', user='stack')
         self.run('openstack overcloud deploy --debug ' +
@@ -78,6 +81,7 @@ class Undercloud(Server):
                  '--ceph-storage-flavor baremetal ' +
                  '--block-storage-flavor baremetal ' +
                  '--swift-storage-flavor baremetal', user='stack')
+        self.run('test -f overcloudrc', user='stack')
 
     def run_tempest(self):
         self.add_environment_file(user='stack', filename='overcloudrc')
