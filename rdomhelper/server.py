@@ -24,8 +24,22 @@ LOG = logging.getLogger('__chainsaw__')
 
 
 class Server(object):
+    """The base class for all the server objects.
+
+    This class comes with standard function to run command, copy files,
+    install packages, activate YUM repositories...
+
+    It also provides some generic methodes specific to RDO-m, like the stack
+    user creation.
+    """
     def __init__(self, hostname, user='root', via_ip=None, key_filename=None,
                  redirect_to_host=None):
+        """:param hostname: IP of the host
+        :param user: optional parameter that can be used to explicitly specify the
+        admin user.
+        :param via_ip: IP of a SSH bastillon to use to connect this host.
+        :param key)filename: the local path to the private key of the local user.
+        """
         assert hostname
         self.hostname = hostname
         self._key_filename = key_filename
@@ -35,8 +49,14 @@ class Server(object):
         self.__enable_root_user(user)
 
     def __enable_root_user(self, user):
-        """Enable the root account on the remote host."""
+        """Enable the root account on the remote host.
 
+
+        Since the host may have been deployed using a Cloud image, it may not
+        be possible to use the 'root' account. This method ensure the root
+        account is enable, if this is not the case, it will try to get the name
+        of admin user and use it to re-enable the root account.
+        """
         _root_ssh_client = ssh.SshClient(
             hostname=self.hostname,
             user='root',
@@ -51,6 +71,9 @@ class Server(object):
             # check if root is not allowed
             if 'Please login as the user "cloud-user"' in result:
                 image_user = 'cloud-user'
+                _root_ssh_client.stop()
+            elif 'Please login as the user "fedora" rather than the user "root"' in result:
+                image_user = 'fedora'
                 _root_ssh_client.stop()
             else:
                 self._ssh_pool.add_ssh_client('root', _root_ssh_client)
@@ -73,10 +96,14 @@ class Server(object):
         _root_ssh_client.start()
         self._ssh_pool.add_ssh_client('root', _root_ssh_client)
 
-    def send_file(self, local_path, remote_path, user='root'):
-        return self._ssh_pool.send_file(user, local_path, remote_path)
+    def send_file(self, local_path, remote_path, user='root', unix_mode=None):
+        """Upload a local file on the remote host.
+        """
+        return self._ssh_pool.send_file(user, local_path, remote_path, unix_mode=unix_mode)
 
     def create_file(self, path, content, mode='w', user='root'):
+        """Create a file on the remote host.
+        """
         return self._ssh_pool.create_file(user, path, content, mode)
 
     def run(self, cmd, user='root', sudo=False, ignore_error=False,
@@ -89,19 +116,39 @@ class Server(object):
             custom_log=custom_log, retry=retry)
 
     def yum_install(self, packages, ignore_error=False):
+        """Install some packages on the remote host.
+
+        :param packages: ist of packages to install.
+        """
         return self.run('yum install -y --quiet ' + ' '.join(packages), ignore_error=ignore_error, retry=5)
 
     def yum_remove(self, packages):
+        """Remove some packages from a remote host.
+
+
+        :param packages: ist of packages to remove.
+        """
         return self.run('yum remove -y --quiet ' + ' '.join(packages))
 
     def install_nosync(self):
+        """Install and unable lib nosync.
+
+        Install the nosync library to reduce the number of fsync() call and
+        speed up the installation.
+        """
         _, rc = self.yum_install(
             ['https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'],
             ignore_error=True)
         if rc == 0:
             self.run('echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload')
+        else:
+            LOG.debug('nosync installation has failed.')
 
     def rhsm_register(self, rhsm):
+        """Register the host on the RHSM.
+
+        :param rhsm: a dict of parameters (login, password, pool_id)
+        """
         # Get rhsm credentials
         login = rhsm.get('login')
         password = rhsm.get('password', os.environ.get('RHN_PW'))
@@ -113,13 +160,19 @@ class Server(object):
             'subscription-manager register --username %s --password %s' % (
                 login, password),
             success_status=(0, 64),
-            custom_log=custom_log)
+            custom_log=custom_log,
+            retry=3)
         if pool_id:
             self.run('subscription-manager attach --pool %s' % pool_id)
         else:
             self.run('subscription-manager attach --auto')
 
     def enable_repositories(self, repositories):
+        """Enable a list of RHSM repositories.
+
+        :param repositories: a dict in this format:
+            [{'type': 'rhsm_channel', 'name': 'rhel-7-server-rpms'}]
+        """
         rhsm_channels = [r['name'] for r in repositories if r['type'] == 'rhsm_channel']
         if rhsm_channels:
             subscription_cmd = "subscription-manager repos '--disable=*' --enable=" + ' --enable='.join(rhsm_channels)
@@ -134,6 +187,8 @@ class Server(object):
             self.yum_install(packages)
 
     def create_stack_user(self):
+        """Create the stack user on the machine.
+        """
         self.run('adduser -m stack', success_status=(0, 9))
         self.create_file('/etc/sudoers.d/stack', 'stack ALL=(root) NOPASSWD:ALL\n')
         self.run('mkdir -p /home/stack/.ssh')
@@ -146,15 +201,21 @@ class Server(object):
                                         self._via_ip)
 
     def fetch_image(self, path, checksum, dest, user='root'):
+        """Store in the user home directory an image from a remote location.
+        """
         self.create_file("%s.md5" % dest, '%s %s\n' % (checksum, dest))
         if self.run('md5sum -c %s.md5' % dest, user=user, ignore_error=True)[1] != 0:
             self.run('curl -o %s %s' % (dest, path), user=user)
 
     def install_base_packages(self):
+        """Install some extra packages.
+        """
         # TODO(Gonéri): We should install chrony or ntpd
         self.yum_install(['yum-utils', 'iptables', 'libselinux-python', 'psmisc', 'redhat-lsb-core', 'rsync'])
 
     def clean_system(self):
+        """Clean up unnecessary packages from the system.
+        """
         self.run('systemctl disable NetworkManager', success_status=(0, 1))
         self.run('systemctl stop NetworkManager', success_status=(0, 5))
         self.run('pkill -9 dhclient', success_status=(0, 1))
@@ -163,15 +224,24 @@ class Server(object):
         self.run('systemctl restart network')
 
     def yum_update(self, allow_reboot=False):
+        """Do a yum update on the system.
+
+        :param allow_reboot: If True and if a new kernel has been installed,
+        the system will be rebooted
+        """
         self.run('yum update -y')
         # reboot if a new initrd has been generated since the boot
         if allow_reboot:
             self.run('find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;')
 
     def install_osp(self):
+        """Install the OSP distribution.
+        """
         self.yum_install(['yum-plugin-priorities', 'python-tripleoclient', 'python-rdomanager-oscplugin'])
 
     def set_selinux(self, state):
+        """Help to enable/disable SELinux on the host.
+        """
         allowed_states = ('enforcing', 'permissive', 'disabled')
         if state not in allowed_states:
             raise Exception
@@ -180,4 +250,8 @@ class Server(object):
                          'SELINUX=%s\nSELINUXTYPE=targeted\n' % state)
 
     def add_environment_file(self, user, filename):
+        """Load an environment file.
+
+        The file will be re-sourced before any new command invocation.
+        """
         return self._ssh_pool.add_environment_file(user, filename)

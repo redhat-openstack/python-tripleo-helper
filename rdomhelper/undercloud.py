@@ -15,6 +15,7 @@
 # under the License.
 
 import logging
+import time
 
 from rdomhelper.server import Server
 
@@ -26,6 +27,8 @@ class Undercloud(Server):
         Server.__init__(self, **kwargs)
 
     def configure(self, repositories):
+        """Prepare the system to be ready for an undercloud installation.
+        """
         self.enable_repositories(repositories)
         self.install_nosync()
         self.create_stack_user()
@@ -33,47 +36,98 @@ class Undercloud(Server):
         self.clean_system()
         self.yum_update()
         self.install_osp()
+        self.set_selinux('permissive')
+        self.fix_hostname()
+
+    def set_ctlplane_mtu(self, mtu=1400):
+        # TODO(Gonéri): Ensure we will get a MTU 1400 on the br-ctlplane for OVB or libvirt
+        # https://review.openstack.org/#/c/288041
+        self.yum_install(['instack-undercloud'])
+        # Ensure the os-net-config configuration has not been generated yet.
+        self.run('test ! -f /etc/os-net-config/config.json')
+        self.run('sed -i \'s/"name": "br-ctlplane",/"name": "br-ctlplane",\\n      "mtu": %d,/\' /usr/share/instack-undercloud/undercloud-stack-config/config.json.template' % mtu)
+        self.run('sed -i \'s/"primary": "true"/"primary": "true",\\n        "mtu": %d/\' /usr/share/instack-undercloud/undercloud-stack-config/config.json.template' % mtu)
+
+    def fix_hostname(self):
+        hostname = self.run('hostname')[0].rstrip('\n')
+        hostname_s = self.run('hostname -s')[0].rstrip('\n')
+        hostname_f = self.run('cat /etc/hostname')[0].rstrip('\n')
+        self.run("sed -i 's,127.0.0.1,127.0.0.1 %s %s %s undercloud.openstacklocal,' /etc/hosts" % (hostname_s, hostname_f, hostname))
 
     def install(self, guest_image_path, guest_image_checksum):
+        """Deploy an undercloud on the host.
+        """
+        # TODO(Gonéri) this method should be splitted/simplified.
         self.fetch_image(
             path=guest_image_path,
             checksum=guest_image_checksum,
             dest='/home/stack/guest_image.qcow2',
             user='stack')
-        hostname_s = self.run('hostname -s')[0].rstrip('\n')
-        hostname_f = self.run('cat /etc/hostname')[0].rstrip('\n')
-        self.run("sed 's,127.0.0.1,127.0.0.1 %s %s,' /etc/hosts" % (hostname_s, hostname_f))
-        self.set_selinux('permissive')
 
         instack_undercloud_ver, _ = self.run('repoquery --whatprovides /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.pp')
         if instack_undercloud_ver.rstrip('\n') == 'instack-undercloud-0:2.2.0-1.el7ost.noarch':
             LOG.warn('Workaround for BZ1298189')
             self.run("sed -i \"s/.*Keystone_domain\['heat_domain'\].*/Service\['keystone'\] -> Class\['::keystone::roles::admin'\] -> Class\['::heat::keystone::domain'\]/\" /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.pp")
+
+        self.run('openstack undercloud install', user='stack')
+        # NOTE(Gonéri): we also need this after the overcloud deployment
         if self.run('rpm -qa openstack-ironic-api')[0].rstrip('\n') == 'openstack-ironic-api-4.2.2-3.el7ost.noarch':
             LOG.warn('Workaround for BZ1297796')
             self.run('systemctl start openstack-ironic-api.service')
-        self.run('openstack undercloud install', user='stack')
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('heat stack-list', user='stack')
 
-    def _fetch_overcloud_images(self, files):
+    def overcloud_image_upload(self, files):
+        """Wrapper for: openstack overcloud image upload
+
+        :param files: a list of files to retrieve first.
+        """
         for name in sorted(files):
             self.fetch_image(
-                path=files[name]['path'],
+                path=files[name]['image_path'],
                 checksum=files[name]['checksum'],
                 dest='/home/stack/%s.tar' % name,
                 user='stack')
             self.run('tar xf /home/stack/%s.tar' % name,
                      user='stack')
-
-    def deploy_overcloud(self, overcloud_images):
-        self.add_environment_file(user='stack', filename='stackrc')
-        self._fetch_overcloud_images(overcloud_images)
         self.run('openstack overcloud image upload', user='stack')
+
+    def load_instackenv(self):
+        """Load the instackenv.json file and wait till the ironic nodes are ready.
+        """
+        self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
+        ironic_node_nbr = int(self.run('grep --count \'"cpu"\' instackenv.json', user='stack')[0])
+        self._wait_for_ironic_nodes(ironic_node_nbr)
         self.run('openstack baremetal configure boot', user='stack')
+
+    def _wait_for_ironic_nodes(self, expected_nbr):
+        LOG.debug('Waiting for %s nodes to be properly registred.' % expected_nbr)
+        for i in range(1, 18):
+            current_nbr = int(self.run('ironic node-list|grep -c "power off"', user='stack')[0])
+            LOG.debug('% 2d/% 2d' % (current_nbr, expected_nbr))
+            if current_nbr >= expected_nbr:
+                LOG.debug('%s ironic nodes are now available.' % current_nbr)
+                break
+            time.sleep(10)
+        else:
+            LOG.debug(
+                'registration of %s nodes times out, succeed to register %s nodes' % (
+                    expected_nbr, current_nbr))
+            # TODO(Gonéri): need a better execpetion
+            raise Exception()
+
+    def start_overcloud_inspector(self):
+        """Wrapper for: openstack baremetal introspection bulk start
+        """
+        self.add_environment_file(user='stack', filename='stackrc')
+        self.run('openstack baremetal introspection bulk start', user='stack')
+
+    def start_overcloud_deploy(self):
+        self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal', user='stack', success_status=(0, 1))
         self.run('openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal', user='stack')
+        self.run('openstack flavor set --property "capabilities:profile"="baremetal" baremetal', user='stack')
         self.run('for uuid in $(ironic node-list|awk \'/available/ {print $2}\'); do ironic node-update $uuid add properties/capabilities=profile:baremetal,boot_option:local; done', user='stack')
         self.run('openstack overcloud deploy --debug ' +
                  '--templates ' +
@@ -93,6 +147,10 @@ class Undercloud(Server):
         self.run('test -f overcloudrc', user='stack')
 
     def run_tempest(self):
+        """Call tempest from this host.
+
+        Launch tempest to validate the newly deployed OpenStack instance.
+        """
         self.add_environment_file(user='stack', filename='overcloudrc')
         self.run('test -d tempest || mkdir tempest', user='stack')
         self.yum_install(['openstack-tempest-liberty'])

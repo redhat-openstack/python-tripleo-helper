@@ -1,0 +1,110 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import argparse
+import copy
+import os
+import neutronclient.v2_0.client
+import subprocess
+import time
+import neutronclient.common.exceptions
+
+
+def list_vip_addresses(undercloud_neutron):
+    vip_addresses = []
+    ports = undercloud_neutron.list_ports()['ports']
+    for port in ports:
+        if port['name'].endswith('virtual_ip'):
+            vip_addresses.append(port['fixed_ips'][0]['ip_address'])
+    return vip_addresses
+
+def fix_allowed_address_pairs(neutron_down_below, vip_addresses):
+    ports = neutron_down_below.list_ports()['ports']
+    for port in ports:
+        new_allowed_address_pairs = copy.deepcopy(port['allowed_address_pairs'])
+        allowed_ips = [i['ip_address'] for i in port['allowed_address_pairs']]
+        to_update = False
+        for vip_ip in vip_addresses:
+            if vip_ip not in allowed_ips:
+                to_update = True
+                print('allow %s on port %s' % (vip_ip, port['id']))
+                new_allowed_address_pairs.append({'ip_address': vip_ip})
+        if to_update:
+            update_port(port['id'], {'allowed_address_pairs': new_allowed_address_pairs})
+
+def fix_baremetal_ip(neutron_down_below):
+    hosts = subprocess.check_output("find /var/lib/neutron/dhcp -name host -exec cat {} \;", shell=True)
+    for line in hosts.split('\n'):
+        if not line.startswith('fa:16'):
+            continue
+        mac, _, new_ip = line.split(',')[0:3]
+        try:
+            port = neutron_down_below.list_ports(mac_address=mac)['ports'][0]
+        except IndexError:
+            continue
+        old_ip = port['fixed_ips'][0]['ip_address']
+        if old_ip == new_ip:
+            continue
+        name = port['name']
+        print('Fixing IP of {name} from {old_ip} to {new_ip}'.format(name=name, old_ip=old_ip, new_ip=new_ip))
+        update_port(port['id'], {'fixed_ips': [{'ip_address': new_ip}]})
+
+def update_port(port_id, port):
+    try:
+        print(neutron_down_below.update_port(port_id, {'port': port}))
+    except neutronclient.common.exceptions.IpAddressInUseClient as e:
+        # TODO
+        print(e)
+        pass
+    except neutronclient.common.exceptions.ConnectionFailed as e:
+        print(e)
+        pass
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(
+        prog='ovb_fix_neutron_addr'
+    )
+    parser.add_argument('--os-user',
+                        dest='user',
+                        required=True,
+                        help='The user for connecting to OpenStack')
+    parser.add_argument('--os-password',
+                        dest='password',
+                        required=True,
+                        help='The password for connecting to OpenStack')
+    parser.add_argument('--os-tenant',
+                        dest='tenant',
+                        required=True,
+                        help='The tenant for connecting to OpenStack')
+    parser.add_argument('--os-auth-url',
+                        dest='auth_url',
+                        required=True,
+                        help='The OpenStack Keystone auth url')
+    args = parser.parse_args()
+
+    while True:
+        undercloud_neutron = neutronclient.v2_0.client.Client(
+            username='admin',
+            password=subprocess.check_output(['/bin/hiera', 'admin_password']).rstrip('\n'),
+            tenant_name='admin',
+            auth_url='http://192.0.2.240:5000/v2.0')
+        try:
+            undercloud_neutron.list_ports()
+        except neutronclient.common.exceptions.NeutronException:
+            print('local neutron is not available yet.')
+            pass
+        else:
+            break
+        time.sleep(60)
+    neutron_down_below = neutronclient.v2_0.client.Client(
+        username=args.user,
+        password=args.password,
+        tenant_name=args.tenant,
+        auth_url=args.auth_url)
+
+    while True:
+        vip_addresses = list_vip_addresses(undercloud_neutron)
+        fix_allowed_address_pairs(neutron_down_below, vip_addresses)
+        fix_baremetal_ip(neutron_down_below)
+        time.sleep(1)

@@ -62,7 +62,8 @@ setuptools.setup(
     ],
     entry_points={
         "console_scripts": [
-            "chainsaw = rdomhelper.shell:main"
+            "chainsaw-libvirt = rdomhelper.shell:main",
+            "chainsaw-ovb = rdomhelper.ovb_shell:main"
         ],
     }
 )

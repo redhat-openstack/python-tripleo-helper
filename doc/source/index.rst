@@ -8,7 +8,8 @@ Contents:
 
    introduction
    installation
-   api
+   examples
+   api/modules
 
 Indices and tables
 ==================

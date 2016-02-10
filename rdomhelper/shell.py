@@ -72,15 +72,18 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
                                                   via_ip=host0_ip,
                                                   key_filename=ssh['private_key'])
         else:
-            vm_undercloud = host0.build_undercloud(
+            vm_undercloud = host0.build_undercloud_on_libvirt(
                 config['undercloud']['image_path'],
                 config['undercloud']['image_checksum'],
                 rhsm=rhsm)
 
         vm_undercloud.configure(config['undercloud']['repositories'])
+        vm_undercloud.set_ctlplane_mtu(1400)
         vm_undercloud.install(config['undercloud']['image_path'],
                               config['undercloud']['image_checksum'])
-        vm_undercloud.deploy_overcloud(config['overcloud'])
+        vm_undercloud.overcloud_image_upload(config['overcloud'])
+        vm_undercloud.load_instackenv()
+        vm_undercloud.start_overcloud_deploy()
         vm_undercloud.run_tempest()
     except Exception as e:
         if host0:

@@ -18,7 +18,7 @@ import logging
 import sys
 
 
-def setup_logging(extra_handlers=()):
+def setup_logging(extra_handlers=(), config_file='chainsaw.log'):
     logger = logging.getLogger('__chainsaw__')
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
@@ -26,7 +26,7 @@ def setup_logging(extra_handlers=()):
     stream_handler = logging.StreamHandler(stream=sys.stdout)
     stream_handler.setFormatter(formatter)
 
-    file_handler = logging.FileHandler('chainsaw.log', mode='w')
+    file_handler = logging.FileHandler(config_file, mode='w')
     file_handler.setFormatter(formatter)
 
     try:

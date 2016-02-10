@@ -124,9 +124,9 @@ class SshClient(object):
             except (OSError,
                     TypeError,
                     ssh_exception.SSHException,
-                    ssh_exception.NoValidConnectionsError) as e:
+                    ssh_exception.NoValidConnectionsError):
                 LOG.info('%s waiting for %s' % (self.description, connect_to))
-                LOG.debug("exception: '%s'" % str(e))
+                # LOG.debug("exception: '%s'" % str(e))
                 time.sleep(1)
             else:
                 LOG.debug('%s connected' % self.description)
@@ -237,7 +237,7 @@ class SshClient(object):
         channel.get_pty()
         return channel
 
-    def send_file(self, local_path, remote_path):
+    def send_file(self, local_path, remote_path, unix_mode=None):
         """Send a file to the remote host.
         :param local_path: the local path of the file
         :type local_path: str
@@ -248,7 +248,9 @@ class SshClient(object):
         """
         self._check_started()
         sftp = paramiko.SFTPClient.from_transport(self._transport)
-        return sftp.put(local_path, remote_path)
+        sftp.put(local_path, remote_path)
+        if unix_mode:
+            sftp.chmod(remote_path, unix_mode)
 
     def create_file(self, path, content, mode='w'):
         """Create a file with a content.
@@ -317,9 +319,9 @@ class PoolSshClient(object):
             custom_log=custom_log,
             retry=retry)
 
-    def send_file(self, user, local_path, remote_path):
+    def send_file(self, user, local_path, remote_path, unix_mode=None):
         self._check_ssh_client(user)
-        return self._ssh_clients[user].send_file(local_path, remote_path)
+        return self._ssh_clients[user].send_file(local_path, remote_path, unix_mode)
 
     def create_file(self, user, path, content, mode='w'):
         self._check_ssh_client(user)

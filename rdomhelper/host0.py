@@ -24,6 +24,10 @@ import os
 
 
 class Host0(Server):
+    """An host0 is an libvirt hypervisor that can be used to spawn VMs.
+
+    This host0 can be a VM or a physical machine.
+    """
     def __init__(self, **kwargs):
         Server.__init__(self, **kwargs)
 
@@ -38,6 +42,8 @@ class Host0(Server):
         self.deploy_hypervisor()
 
     def deploy_hypervisor(self):
+        """Install the libvirtd and instack-undercloud packages.
+        """
         self.yum_install(['libvirt-daemon-driver-nwfilter', 'libvirt-client', 'libvirt-daemon-config-network', 'libvirt-daemon-driver-nodedev', 'libvirt-daemon-kvm', 'libvirt-python', 'libvirt-daemon-config-nwfilter', 'libvirt-glib', 'libvirt-daemon', 'libvirt-daemon-driver-storage', 'libvirt', 'libvirt-daemon-driver-network', 'libvirt-devel', 'libvirt-gobject', 'libvirt-daemon-driver-secret', 'libvirt-daemon-driver-qemu', 'libvirt-daemon-driver-interface', 'libguestfs-tools.noarch', 'virt-install', 'genisoimage', 'openstack-tripleo', 'libguestfs-tools', 'instack-undercloud'])
         self.run('sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf')
         self.run('systemctl start libvirtd')

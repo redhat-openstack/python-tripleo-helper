@@ -19,14 +19,16 @@ import logging
 import sys
 import time
 
+import novaclient.exceptions
 import rdomhelper.host0
 from rdomhelper.provisioners.openstack import utils
-
 
 LOG = logging.getLogger('__chainsaw__')
 
 
 def build_openstack_instance(nova_api, name, image, flavor, key_name, nics):
+    LOG.info("building instance '%s'" % name)
+
     instance = nova_api.servers.create(
         name=name,
         image=image,
@@ -92,3 +94,14 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name,
         user=provisioner['image'].get('user', 'root'),
         key_filename=private_key)
     return host0
+
+
+def add_provision_security_group(nova_api):
+    try:
+        group = nova_api.security_groups.find(name='provision')
+    except novaclient.exceptions.NotFound:
+        group = nova_api.security_groups.create(name='provision', description='Provision network')
+        nova_api.security_group_rules.create(group.id, ip_protocol="icmp", from_port=-1, to_port=-1, cidr='0.0.0.0/0')
+        nova_api.security_group_rules.create(group.id, ip_protocol="tcp", from_port=1, to_port=65535, cidr='0.0.0.0/0')
+        nova_api.security_group_rules.create(group.id, ip_protocol="udp", from_port=1, to_port=65535, cidr='0.0.0.0/0')
+    return group

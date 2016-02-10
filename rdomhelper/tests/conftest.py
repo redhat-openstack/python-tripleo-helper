@@ -70,5 +70,6 @@ def fake_sshclient(monkeypatch, request):
     monkeypatch.setattr('rdomhelper.ssh.SshClient', FakeSshClient)
 
     def fin():
-        assert not FakeSshClient.expectation, 'Some expectations remain unevaluated'
+        msg = 'Some expectations remain unevaluated: %s' % FakeSshClient.expectation
+        assert not FakeSshClient.expectation, msg
     request.addfinalizer(fin)
