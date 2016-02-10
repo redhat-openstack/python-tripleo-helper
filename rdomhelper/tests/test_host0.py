@@ -18,7 +18,7 @@ import pytest
 
 import rdomhelper.host0
 
-expectation = [
+expectation_build_undercloud = [
     {'func': 'run', 'args': {
         'cmd': 'uname -a'}},
     {'func': 'run', 'args': {
@@ -47,22 +47,22 @@ expectation = [
 ]
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
-def test_instack_virt_setup(fake_sshclient):
+@pytest.mark.parametrize('fake_sshclient', [expectation_build_undercloud], indirect=['fake_sshclient'])
+def test_build_undercloud_on_libvirt(fake_sshclient):
     test_host0 = rdomhelper.host0.Host0(hostname='my-host')
 
     # TODO(Gonéri): manually create the connection 'stack' in the pool
     test_host0._ssh_pool.build_ssh_client(
         test_host0.hostname, 'stack', None, None)
 
-    undercloud = test_host0.instack_virt_setup(
+    undercloud = test_host0.build_undercloud_on_libvirt(
         'http://host/guest_image_path.qcow2', 'f982ce8e27bc8222a0c1f0e769a31de1')
 
     assert undercloud
     assert undercloud.hostname == '192.168.122.234'
 
 
-expectation = [
+expectation_deploy_hypervisor = [
     {'func': 'run', 'args': {'cmd': 'uname -a'}},
     {'func': 'run', 'args': {'cmd': 'yum install -y --quiet libvirt-daemon-driver-nwfilter libvirt-client libvirt-daemon-config-network libvirt-daemon-driver-nodedev libvirt-daemon-kvm libvirt-python libvirt-daemon-config-nwfilter libvirt-glib libvirt-daemon libvirt-daemon-driver-storage libvirt libvirt-daemon-driver-network libvirt-devel libvirt-gobject libvirt-daemon-driver-secret libvirt-daemon-driver-qemu libvirt-daemon-driver-interface libguestfs-tools.noarch virt-install genisoimage openstack-tripleo libguestfs-tools instack-undercloud'}},
     {'func': 'run', 'args': {'cmd': 'sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf'}},
@@ -79,8 +79,7 @@ expectation = [
 ]
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation_deploy_hypervisor], indirect=['fake_sshclient'])
 def test_deploy_hypervisor(fake_sshclient):
     test_host0 = rdomhelper.host0.Host0(hostname='my-host')
-
     test_host0.deploy_hypervisor()
