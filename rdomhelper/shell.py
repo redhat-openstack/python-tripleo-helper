@@ -18,82 +18,17 @@
 import click
 import yaml
 
-import datetime
 import logging
 import os
-import sys
 import traceback
 
 import rdomhelper.host0
 from rdomhelper import logger
-from rdomhelper.provisioners.openstack import os_libvirt
-from rdomhelper.provisioners.openstack import utils as os_utils
+from rdomhelper.provisioners.openstack import provisioner as os_provisioner
 from rdomhelper import undercloud
 
 
 LOG = logging.getLogger('__chainsaw__')
-
-
-def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name, config):
-    provisioner = config['provisioner']
-    if provisioner['type'] == 'openstack':
-        LOG.info("using 'openstack' provisioner")
-        nova_api = os_utils.build_nova_api(os_auth_url, os_username,
-                                           os_password, os_tenant_name)
-
-        image_id_to_boot_from = os_utils.get_image_id(nova_api,
-                                                      provisioner['image']['name'])
-        flavor_id = os_utils.get_flavor_id(nova_api, provisioner['flavor'])
-        keypair_id = os_utils.get_keypair_id(nova_api, provisioner['keypair'])
-        network_id = os_utils.get_network_id(nova_api, provisioner['network'])
-        nics = [{'net-id': network_id}]
-
-        instance_name = "%s-%s" % (provisioner['instance_name_prefix'],
-                                   str(datetime.datetime.utcnow()))
-        LOG.info("building instance '%s'" % instance_name)
-
-        os_instance = os_libvirt.build_openstack_instance(
-            nova_api,
-            instance_name,
-            image_id_to_boot_from,
-            flavor_id,
-            keypair_id,
-            nics)
-
-        if os_instance:
-            host0_ip = os_utils.add_a_floating_ip(nova_api, os_instance)
-            LOG.info("add floating ip '%s'" % host0_ip)
-            os_utils.add_security_groups(os_instance,
-                                         provisioner['security-groups'])
-            LOG.info("add security groups '%s'" %
-                     provisioner['security-groups'])
-            LOG.info("instance '%s' ready to use" % instance_name)
-        else:
-            LOG.error("instance '%s' failed" % instance_name)
-            sys.exit(1)
-
-        host0 = rdomhelper.host0.Host0(hostname=host0_ip,
-                                       user=config['provisioner']['image'].get('user', 'root'),
-                                       key_filename=config['ssh']['private_key'])
-        host0.rhsm_register(
-            config['rhsm']['login'],
-            config['rhsm'].get('password', os.environ.get('RHN_PW')),
-            config['rhsm']['pool_id'])
-        return host0
-
-
-def configure_undercloud(undercloud, repositories, guest_image_path, guest_image_checksum, files):
-    undercloud.enable_repositories(repositories)
-    undercloud.install_nosync()
-    undercloud.create_stack_user()
-    undercloud.install_base_packages()
-    undercloud.clean_system()
-    undercloud.yum_update()
-    undercloud.install_osp()
-    undercloud.start_undercloud(
-        guest_image_path,
-        guest_image_checksum)
-    undercloud.start_overcloud(files)
 
 
 @click.command()
@@ -119,36 +54,37 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
 
     logger.setup_logging()
     try:
+        rhsm_login = config['rhsm']['login']
+        rhsm_password = config['rhsm'].get('password', os.environ.get('RHN_PW'))
+        pool_id = config['rhsm'].get('pool_id')
         if host0_ip:
             host0 = rdomhelper.host0.Host0(hostname=host0_ip,
                                            user=config['provisioner']['image'].get('user', 'root'),
                                            key_filename=ssh['private_key'])
-            if undercloud_ip:
-                vm_undercloud = undercloud.Undercloud(hostname=undercloud_ip,
-                                                      user='root',
-                                                      via_ip=host0_ip,
-                                                      key_filename=ssh['private_key'])
-        if not host0:
-            host0 = deploy_host0(os_auth_url, os_username, os_password,
-                                 os_tenant_name, config)
+        else:
+            host0 = os_provisioner.deploy_host0(os_auth_url, os_username,
+                                                os_password, os_tenant_name,
+                                                config['provisioner'],
+                                                config['ssh']['private_key'])
+        host0.configure(rhsm_login, rhsm_password, pool_id,
+                        repositories=config['provisioner']['repositories'])
 
-        if not vm_undercloud:
-            host0.enable_repositories(config['provisioner']['repositories'])
-            host0.install_nosync()
-            host0.create_stack_user()
-            host0.deploy_hypervisor()
-            vm_undercloud = host0.instack_virt_setup(
+        if undercloud_ip:
+            vm_undercloud = undercloud.Undercloud(hostname=undercloud_ip,
+                                                  user='root',
+                                                  via_ip=host0_ip,
+                                                  key_filename=ssh['private_key'])
+        else:
+            vm_undercloud = host0.build_undercloud(
                 config['undercloud']['guest_image_path'],
                 config['undercloud']['guest_image_checksum'],
-                rhsm_login=config['rhsm']['login'],
-                rhsm_password=config['rhsm'].get('password', os.environ.get('RHN_PW')))
+                rhsm_login=rhsm_login,
+                rhsm_password=rhsm_password)
 
-        configure_undercloud(
-            vm_undercloud,
-            config['undercloud']['repositories'],
-            config['undercloud']['guest_image_path'],
-            config['undercloud']['guest_image_checksum'],
-            config['undercloud'].get('files', []))
+        vm_undercloud.configure(config['undercloud']['repositories'])
+        vm_undercloud.install(config['undercloud']['guest_image_path'],
+                              config['undercloud']['guest_image_checksum'])
+        vm_undercloud.deploy_overcloud(config['undercloud'].get('files', []))
         vm_undercloud.run_tempest()
     except Exception as e:
         if host0:

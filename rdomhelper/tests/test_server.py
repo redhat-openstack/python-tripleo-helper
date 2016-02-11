@@ -34,13 +34,13 @@ expectation = [
 ] + expectation_create_user
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
 def test_create_user(fake_sshclient):
     test_server = server.Server('toto', 'titi')
     test_server.create_stack_user()
 
 
-expectation = [
+expectation_rhsm_register = [
     {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}},
     {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
     {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password pass'}},
@@ -48,13 +48,13 @@ expectation = [
 ]
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation_rhsm_register], indirect=['fake_sshclient'])
 def test_rhsm_register(fake_sshclient):
     test_server = server.Server('toto', 'titi')
     test_server.rhsm_register('login', 'pass')
 
 
-expectation = [
+expectation_rhsm_register_with_pool_id = [
     {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}},
     {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
     {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password pass'}},
@@ -62,7 +62,7 @@ expectation = [
 ]
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation_rhsm_register_with_pool_id], indirect=['fake_sshclient'])
 def test_rhsm_register_with_pool_id(fake_sshclient):
     test_server = server.Server('toto', 'titi')
     test_server.rhsm_register('login', 'pass', 'pool_id')
@@ -76,7 +76,7 @@ expectation = [
         'cmd': 'uname -a'}}] + expectation_install_base_packages
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
 def test_install_base_packages(fake_sshclient):
     test_server = server.Server(hostname='my-host')
     test_server.install_base_packages()
@@ -94,7 +94,7 @@ expectation = [
 ] + expectation_clean_system
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
 def test_clean_system(fake_sshclient):
     test_server = server.Server(hostname='my-host')
     test_server.clean_system()
@@ -107,7 +107,7 @@ expectation = [
 ] + expectation_yum_update
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
 def test_yum_update(fake_sshclient):
     test_server = server.Server(hostname='my-host')
     test_server.yum_update()
@@ -122,7 +122,7 @@ expectation = [
 ] + expectation_yum_update_with_reboot
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
 def test_yum_update_with_reboot(fake_sshclient):
     test_server = server.Server(hostname='my-host')
     test_server.yum_update(allow_reboot=True)
@@ -136,7 +136,7 @@ expectation = [
 ] + expectation_install_osp
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
 def test_install_osp(fake_sshclient):
     test_server = server.Server(hostname='my-host')
     test_server.install_osp()
@@ -169,7 +169,7 @@ expectation = [
 ] + expectation_fetch_image
 
 
-@pytest.mark.parametrize('fake_sshclient', [(expectation)], indirect=['fake_sshclient'])
+@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
 def test_fetch_image(fake_sshclient):
     test_server = server.Server(hostname='my-host')
     test_server.fetch_image('http://host/image', 'this_is_a_Bad_md5', 'somewhere')

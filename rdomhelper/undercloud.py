@@ -35,7 +35,16 @@ class Undercloud(Server):
             self.run('tar xf /home/stack/%s.tar' % name,
                      user='stack')
 
-    def start_undercloud(self, guest_image_path, guest_image_checksum):
+    def configure(self, repositories):
+        self.enable_repositories(repositories)
+        self.install_nosync()
+        self.create_stack_user()
+        self.install_base_packages()
+        self.clean_system()
+        self.yum_update()
+        self.install_osp()
+
+    def install(self, guest_image_path, guest_image_checksum):
         self.fetch_image(
             path=guest_image_path,
             checksum=guest_image_checksum,
@@ -57,7 +66,7 @@ class Undercloud(Server):
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('heat stack-list', user='stack')
 
-    def start_overcloud(self, files):
+    def deploy_overcloud(self, files):
         self.add_environment_file(user='stack', filename='stackrc')
         self._retrieve_prebuilt_files(files)
         self.run('openstack overcloud image upload', user='stack')

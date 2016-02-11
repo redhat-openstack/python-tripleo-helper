@@ -25,6 +25,18 @@ class Host0(Server):
     def __init__(self, **kwargs):
         Server.__init__(self, **kwargs)
 
+    def configure(self, rhsm_login, rhsm_password, pool_id=None,
+                  repositories=None):
+        """This method will configure the host0 and run the hypervisor."""
+        self.rhsm_register(rhsm_login,
+                           rhsm_password,
+                           pool_id)
+        if repositories is not None:
+            self.enable_repositories(repositories)
+        self.install_nosync()
+        self.create_stack_user()
+        self.deploy_hypervisor()
+
     def deploy_hypervisor(self):
         self.yum_install(['libvirt-daemon-driver-nwfilter', 'libvirt-client', 'libvirt-daemon-config-network', 'libvirt-daemon-driver-nodedev', 'libvirt-daemon-kvm', 'libvirt-python', 'libvirt-daemon-config-nwfilter', 'libvirt-glib', 'libvirt-daemon', 'libvirt-daemon-driver-storage', 'libvirt', 'libvirt-daemon-driver-network', 'libvirt-devel', 'libvirt-gobject', 'libvirt-daemon-driver-secret', 'libvirt-daemon-driver-qemu', 'libvirt-daemon-driver-interface', 'libguestfs-tools.noarch', 'virt-install', 'genisoimage', 'openstack-tripleo', 'libguestfs-tools', 'instack-undercloud'])
         self.run('sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf')
@@ -35,9 +47,9 @@ class Host0(Server):
         self.clean_system()
         self.yum_update()
 
-    def instack_virt_setup(self, guest_image_path, guest_image_checksum,
-                           rhsm_login=None, rhsm_password=None):
-
+    def build_undercloud_on_libvirt(self, guest_image_path, guest_image_checksum,
+                                    rhsm_login=None, rhsm_password=None):
+        """Build the Undercloud by using instack-virt-setup script."""
         self.run('sysctl net.ipv4.ip_forward=1')
         self.fetch_image(path=guest_image_path, checksum=guest_image_checksum, dest='/home/stack/guest_image.qcow2',
                          user='stack')
