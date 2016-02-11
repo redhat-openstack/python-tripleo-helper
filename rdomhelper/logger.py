@@ -18,7 +18,7 @@ import logging
 import sys
 
 
-def setup_logging():
+def setup_logging(extra_handlers=()):
     logger = logging.getLogger('__chainsaw__')
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
@@ -49,3 +49,5 @@ def setup_logging():
         pass
     logger.addHandler(stream_handler)
     logger.addHandler(file_handler)
+    for handler in extra_handlers:
+        logger.addHandler(handler)
