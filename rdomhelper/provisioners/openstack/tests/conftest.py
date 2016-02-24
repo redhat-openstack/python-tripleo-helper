@@ -60,4 +60,8 @@ def nova_api():
     test_nova_api.floating_ips = mock.Mock()
     test_nova_api.floating_ips.list.return_value = [one_floating_ip]
 
+    # Mock servers
+    test_nova_api.servers = mock.Mock()
+    test_nova_api.servers.list.return_value = test_resources
+
     return test_nova_api

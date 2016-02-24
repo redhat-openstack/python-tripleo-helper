@@ -92,3 +92,10 @@ def test_add_security_groups():
 
     test_instance.add_security_group.assert_called_with(test_sgs[1])
     assert test_instance.add_security_group.call_count == 2
+
+
+def test_remove_instances_by_prefix(nova_api):
+    test_server_1, test_server_2 = nova_api.servers.list()
+    utils.remove_instances_by_prefix(nova_api, 'resource_1')
+    test_server_1.delete.assert_called_with()
+    test_server_2.delete.assert_not_called()

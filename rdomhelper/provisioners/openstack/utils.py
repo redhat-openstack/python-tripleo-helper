@@ -70,3 +70,10 @@ def add_a_floating_ip(nova_api, os_instance):
 def add_security_groups(os_instance, security_groups):
     for sg in security_groups:
         os_instance.add_security_group(sg)
+
+
+def remove_instances_by_prefix(nova_api, prefix):
+    """Remove all the instances on which their name start by a prefix."""
+    for server in nova_api.servers.list():
+        if server.name.startswith(prefix):
+            server.delete()
