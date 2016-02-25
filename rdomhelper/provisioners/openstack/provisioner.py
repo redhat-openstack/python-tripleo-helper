@@ -48,10 +48,13 @@ def build_openstack_instance(nova_api, name, image, flavor, key_name, nics):
 
 
 def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name,
-                 provisioner, private_key):
+                 provisioner, private_key, cleanup_environment=False):
     LOG.info("using 'openstack' provisioner")
     nova_api = utils.build_nova_api(os_auth_url, os_username,
                                     os_password, os_tenant_name)
+    if cleanup_environment is True:
+        utils.remove_instances_by_prefix(nova_api,
+                                         provisioner['instance_name_prefix'])
 
     image_id_to_boot_from = utils.get_image_id(nova_api,
                                                provisioner['image']['name'])

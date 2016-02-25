@@ -16,6 +16,10 @@
 
 from novaclient import client as nova_client
 
+import logging
+
+LOG = logging.getLogger('__chainsaw__')
+
 
 def _get_id_by_attr(resources, attr, value):
     for resource in resources:
@@ -76,4 +80,5 @@ def remove_instances_by_prefix(nova_api, prefix):
     """Remove all the instances on which their name start by a prefix."""
     for server in nova_api.servers.list():
         if server.name.startswith(prefix):
+            LOG.info("Remove instance '%s'" % server.name)
             server.delete()
