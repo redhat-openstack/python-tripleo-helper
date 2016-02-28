@@ -43,7 +43,7 @@ def test_create_user(fake_sshclient):
 expectation_rhsm_register = [
     {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}},
     {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
-    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password pass'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password password'}},
     {'func': 'run', 'args': {'cmd': 'subscription-manager attach --auto'}},
 ]
 
@@ -51,13 +51,13 @@ expectation_rhsm_register = [
 @pytest.mark.parametrize('fake_sshclient', [expectation_rhsm_register], indirect=['fake_sshclient'])
 def test_rhsm_register(fake_sshclient):
     test_server = server.Server('toto', 'titi')
-    test_server.rhsm_register('login', 'pass')
+    test_server.rhsm_register(rhsm={'login': 'login', 'password': 'password'})
 
 
 expectation_rhsm_register_with_pool_id = [
     {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}},
     {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
-    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password pass'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password password'}},
     {'func': 'run', 'args': {'cmd': 'subscription-manager attach --pool pool_id'}},
 ]
 
@@ -65,7 +65,7 @@ expectation_rhsm_register_with_pool_id = [
 @pytest.mark.parametrize('fake_sshclient', [expectation_rhsm_register_with_pool_id], indirect=['fake_sshclient'])
 def test_rhsm_register_with_pool_id(fake_sshclient):
     test_server = server.Server('toto', 'titi')
-    test_server.rhsm_register('login', 'pass', 'pool_id')
+    test_server.rhsm_register(rhsm={'login': 'login', 'password': 'password', 'pool_id': 'pool_id'})
 
 
 expectation_install_base_packages = [

@@ -16,6 +16,7 @@
 
 
 import logging
+import os
 
 from rdomhelper import ssh
 
@@ -98,7 +99,11 @@ class Server(object):
         if rc == 0:
             self.run('echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload')
 
-    def rhsm_register(self, login, password, pool_id=None):
+    def rhsm_register(self, rhsm):
+        # Get rhsm credentials
+        login = rhsm.get('login')
+        password = rhsm.get('password', os.environ.get('RHN_PW'))
+        pool_id = rhsm.get('pool_id')
         # Ensure the RHEL beta channel are disabled
         self.run('rm /etc/pki/product/69.pem', ignore_error=True)
         custom_log = 'subscription-manager register --username %s --password *******' % login
@@ -114,14 +119,17 @@ class Server(object):
 
     def enable_repositories(self, repositories):
         rhsm_channels = [r['name'] for r in repositories if r['type'] == 'rhsm_channel']
-        repo_files = [r for r in repositories if r['type'] == 'yum_repo']
-
         if rhsm_channels:
             subscription_cmd = "subscription-manager repos '--disable=*' --enable=" + ' --enable='.join(rhsm_channels)
             self.run(subscription_cmd)
 
+        repo_files = [r for r in repositories if r['type'] == 'yum_repo']
         for repo_file in repo_files:
             self.create_file(repo_file['dest'], repo_file['content'])
+
+        packages = [r['name'] for r in repositories if r['type'] == 'package']
+        if packages:
+            self.yum_install(packages)
 
     def create_stack_user(self):
         self.run('adduser -m stack', success_status=(0, 9))

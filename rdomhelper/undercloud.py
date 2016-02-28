@@ -25,16 +25,6 @@ class Undercloud(Server):
     def __init__(self, **kwargs):
         Server.__init__(self, **kwargs)
 
-    def _retrieve_prebuilt_files(self, files):
-        for name in sorted(files):
-            self.fetch_image(
-                path=files[name]['path'],
-                checksum=files[name]['checksum'],
-                dest='/home/stack/%s.tar' % name,
-                user='stack')
-            self.run('tar xf /home/stack/%s.tar' % name,
-                     user='stack')
-
     def configure(self, repositories):
         self.enable_repositories(repositories)
         self.install_nosync()
@@ -66,9 +56,19 @@ class Undercloud(Server):
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('heat stack-list', user='stack')
 
-    def deploy_overcloud(self, files):
+    def _fetch_overcloud_images(self, files):
+        for name in sorted(files):
+            self.fetch_image(
+                path=files[name]['path'],
+                checksum=files[name]['checksum'],
+                dest='/home/stack/%s.tar' % name,
+                user='stack')
+            self.run('tar xf /home/stack/%s.tar' % name,
+                     user='stack')
+
+    def deploy_overcloud(self, overcloud_images):
         self.add_environment_file(user='stack', filename='stackrc')
-        self._retrieve_prebuilt_files(files)
+        self._fetch_overcloud_images(overcloud_images)
         self.run('openstack overcloud image upload', user='stack')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
         self.run('openstack baremetal configure boot', user='stack')

@@ -19,7 +19,6 @@ import click
 import yaml
 
 import logging
-import os
 import traceback
 
 import rdomhelper.host0
@@ -54,9 +53,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
 
     logger.setup_logging()
     try:
-        rhsm_login = config['rhsm']['login']
-        rhsm_password = config['rhsm'].get('password', os.environ.get('RHN_PW'))
-        pool_id = config['rhsm'].get('pool_id')
+        rhsm = config.get('rhsm')
         if host0_ip:
             host0 = rdomhelper.host0.Host0(hostname=host0_ip,
                                            user=config['provisioner']['image'].get('user', 'root'),
@@ -66,8 +63,8 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
                                                 os_password, os_tenant_name,
                                                 config['provisioner'],
                                                 config['ssh']['private_key'])
-        host0.configure(rhsm_login, rhsm_password, pool_id,
-                        repositories=config['provisioner']['repositories'])
+        host0.configure(rhsm=rhsm,
+                        repositories=config['host0']['repositories'])
 
         if undercloud_ip:
             vm_undercloud = undercloud.Undercloud(hostname=undercloud_ip,
@@ -76,15 +73,14 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
                                                   key_filename=ssh['private_key'])
         else:
             vm_undercloud = host0.build_undercloud(
-                config['undercloud']['guest_image_path'],
-                config['undercloud']['guest_image_checksum'],
-                rhsm_login=rhsm_login,
-                rhsm_password=rhsm_password)
+                config['undercloud']['image_path'],
+                config['undercloud']['image_checksum'],
+                rhsm=rhsm)
 
         vm_undercloud.configure(config['undercloud']['repositories'])
-        vm_undercloud.install(config['undercloud']['guest_image_path'],
-                              config['undercloud']['guest_image_checksum'])
-        vm_undercloud.deploy_overcloud(config['undercloud'].get('files', []))
+        vm_undercloud.install(config['undercloud']['image_path'],
+                              config['undercloud']['image_checksum'])
+        vm_undercloud.deploy_overcloud(config['overcloud'])
         vm_undercloud.run_tempest()
     except Exception as e:
         if host0:

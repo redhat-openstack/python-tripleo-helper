@@ -1,0 +1,57 @@
+---
+dci:
+    login: admin
+    password: admin
+    control_server_url: http://127.0.0.1:5000
+    remoteci_id: 30cef87f-288a-4ece-b65c-b7922a046696
+provisioner:
+    type: openstack
+    instance_name_prefix: yassine
+    image:
+        name: CentOS 7 (1509) x86_64
+        user: cloud-user
+    flavor: m1.hypervisor
+    network: private
+    keypair: DCI
+    security-groups:
+        - ssh
+        - rhos-mirror-user
+ssh:
+    private_key: /home/yassine/.ssh/DCI/id_rsa
+repositories: &DEFAULT_REPOSITORIES
+    - type: package
+      name: epel-release
+    - type: yum_repo
+      content: |
+          [delorean]
+          name=delorean
+          baseurl=http://trunk.rdoproject.org/centos7-liberty/30/d7/30d72e135eb71db4afbf50e031adf2a3821b8792_d061daa3
+          enabled=1
+          gpgcheck=0
+          priority=1
+      dest: /etc/yum.repos.d/delorean-liberty.repo
+    - type: yum_repo
+      content: |
+          [delorean-liberty-testing]
+          name=delorean-liberty-testing
+          baseurl=http://buildlogs.centos.org/centos/7/cloud/$basearch/openstack-liberty/
+          enabled=1
+          gpgcheck=0
+          priority=2
+      dest: /etc/yum.repos.d/delorean-deps-liberty.repo
+host0:
+    repositories: *DEFAULT_REPOSITORIES
+undercloud:
+    repositories: *DEFAULT_REPOSITORIES
+    image_path: https://repos.fedorapeople.org/repos/openstack-m/rdo-images-centos-liberty/undercloud.qcow2
+    image_checksum: 486900b54f4757cb2d6b59d9bce9fe90
+overcloud:
+    overcloud-full:
+        image_path: https://repos.fedorapeople.org/repos/openstack-m/rdo-images-centos-liberty/overcloud-full.tar
+        checksum: 3a91c8cc2226879e097aeb8a55e1c6f9
+    ironic-python-agent:
+        image_path: https://repos.fedorapeople.org/repos/openstack-m/rdo-images-centos-liberty/ironic-python-agent.tar
+        checksum: d0afde2f99b91fbdd96020d6be704aeb
+    deploy-ramdisk-ironic:
+        image_path: https://repos.fedorapeople.org/repos/openstack-m/rdo-images-centos-liberty/deploy-ramdisk-ironic.tar
+        checksum: e840f5663d8fca8bc7aafc2a866487a1

@@ -20,17 +20,17 @@ from rdomhelper.undercloud import Undercloud
 from jinja2 import Environment
 from jinja2 import FileSystemLoader
 
+import os
+
 
 class Host0(Server):
     def __init__(self, **kwargs):
         Server.__init__(self, **kwargs)
 
-    def configure(self, rhsm_login, rhsm_password, pool_id=None,
-                  repositories=None):
+    def configure(self, rhsm=None, repositories=None):
         """This method will configure the host0 and run the hypervisor."""
-        self.rhsm_register(rhsm_login,
-                           rhsm_password,
-                           pool_id)
+        if rhsm is not None:
+            self.rhsm_register(rhsm)
         if repositories is not None:
             self.enable_repositories(repositories)
         self.install_nosync()
@@ -47,11 +47,10 @@ class Host0(Server):
         self.clean_system()
         self.yum_update()
 
-    def build_undercloud_on_libvirt(self, guest_image_path, guest_image_checksum,
-                                    rhsm_login=None, rhsm_password=None):
+    def build_undercloud_on_libvirt(self, image_path, image_checksum, rhsm=None):
         """Build the Undercloud by using instack-virt-setup script."""
         self.run('sysctl net.ipv4.ip_forward=1')
-        self.fetch_image(path=guest_image_path, checksum=guest_image_checksum, dest='/home/stack/guest_image.qcow2',
+        self.fetch_image(path=image_path, checksum=image_checksum, dest='/home/stack/guest_image.qcow2',
                          user='stack')
         # NOTE(Gonéri): this is a hack for our OpenStack, the MTU of its outgoing route
         # is 1400 and libvirt do not provide a mechanism to adjust the guests MTU.
@@ -63,22 +62,25 @@ class Host0(Server):
         self.run('mkdir -p /home/stack/DIB', user='stack')
         self.run('cp -v /etc/yum.repos.d/*.repo /home/stack/DIB', user='stack')
         # NOTE(Gonéri): Hack to be sure DIB won't complain because of missing gpg files
-#        self.run('sed -i "s,gpgcheck=1,gpgcheck=0," /home/stack/DIB/*.repo', user='stack')
+        # self.run('sed -i "s,gpgcheck=1,gpgcheck=0," /home/stack/DIB/*.repo', user='stack')
         dib_yum_repo_conf = self.run('find /home/stack/DIB -type f', user='stack')[0].split()
-        virt_setup_env = template.render(
-            {
-                'dib_yum_repo_conf': dib_yum_repo_conf,
-                'node': {
-                    'count': 2,
-                    'mem': 6144,
-                    'cpu': 2
-                },
-                'undercloud_node_mem': 8192,
-                'guest_image_name': '/home/stack/guest_image.qcow2',
-                'rhsm': {
-                    'user': rhsm_login,
-                    'password': rhsm_password
-                }})
+        virt_setup_template = {
+            'dib_yum_repo_conf': dib_yum_repo_conf,
+            'node': {
+                'count': 2,
+                'mem': 6144,
+                'cpu': 2
+            },
+            'undercloud_node_mem': 8192,
+            'guest_image_name': '/home/stack/guest_image.qcow2'
+        }
+
+        if rhsm is not None:
+            virt_setup_template['rhsm'] = {
+                'login': rhsm.get('login'),
+                'password': rhsm.get('password', os.environ.get('RHN_PW'))
+            }
+        virt_setup_env = template.render(virt_setup_template)
         self.create_file('virt-setup-env', virt_setup_env, user='stack')
         self.run('virsh destroy instack', ignore_error=True)
         self.run('virsh undefine instack --remove-all-storage', ignore_error=True)
