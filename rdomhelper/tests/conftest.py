@@ -33,6 +33,7 @@ class FakeSshClient(rdomhelper.ssh.SshClient):
         # parameters
         ignore_parameters = (
             'sudo',
+            'retry',
             'custom_log',
             'success_status',
             'error_callback',

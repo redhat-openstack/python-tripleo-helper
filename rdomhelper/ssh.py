@@ -156,7 +156,7 @@ class SshClient(object):
         return cmd
 
     def run(self, cmd, sudo=False, ignore_error=False, success_status=(0,),
-            error_callback=None, custom_log=None):
+            error_callback=None, custom_log=None, retry=0):
         """Run a command on the remote host.
 
         The command is run on the remote host, if there is a redirected host
@@ -199,10 +199,20 @@ class SshClient(object):
                     cmd_output.write(received)
         cmd_output = cmd_output.getvalue()
         exit_status = channel.exit_status
-        return self._evaluate_run_result(
-            exit_status, cmd_output, ignore_error=ignore_error,
-            success_status=success_status, error_callback=error_callback,
-            custom_log=custom_log)
+        try:
+            return self._evaluate_run_result(
+                exit_status, cmd_output, ignore_error=ignore_error,
+                success_status=success_status, error_callback=error_callback,
+                custom_log=custom_log)
+        except paramiko.ssh_exception.SSHException as e:
+            if not retry:
+                raise e
+            else:
+                return self.run(
+                    cmd, sudo=sudo, ignore_error=ignore_error,
+                    success_status=success_status,
+                    error_callback=error_callback, custom_log=custom_log,
+                    retry=(retry - 1))
 
     def _evaluate_run_result(
             self, exit_status, cmd_output, ignore_error=False, success_status=(0,),
@@ -294,7 +304,8 @@ class PoolSshClient(object):
             raise ssh_exception.SSHException(_error)
 
     def run(self, user, cmd, sudo=False, ignore_error=False,
-            success_status=(0,), error_callback=None, custom_log=None):
+            success_status=(0,), error_callback=None, custom_log=None,
+            retry=0):
         self._check_ssh_client(user)
 
         return self._ssh_clients[user].run(
@@ -303,7 +314,8 @@ class PoolSshClient(object):
             ignore_error=ignore_error,
             success_status=success_status,
             error_callback=error_callback,
-            custom_log=custom_log)
+            custom_log=custom_log,
+            retry=retry)
 
     def send_file(self, user, local_path, remote_path):
         self._check_ssh_client(user)

@@ -80,14 +80,16 @@ class Server(object):
         return self._ssh_pool.create_file(user, path, content, mode)
 
     def run(self, cmd, user='root', sudo=False, ignore_error=False,
-            success_status=(0,), error_callback=None, custom_log=None):
+            success_status=(0,), error_callback=None, custom_log=None, retry=0):
+        """Run a command on the remote host.
+        """
         return self._ssh_pool.run(
             user, cmd, sudo=sudo, ignore_error=ignore_error,
             success_status=success_status, error_callback=error_callback,
-            custom_log=custom_log)
+            custom_log=custom_log, retry=retry)
 
     def yum_install(self, packages, ignore_error=False):
-        return self.run('yum install -y --quiet ' + ' '.join(packages), ignore_error=ignore_error)
+        return self.run('yum install -y --quiet ' + ' '.join(packages), ignore_error=ignore_error, retry=5)
 
     def yum_remove(self, packages):
         return self.run('yum remove -y --quiet ' + ' '.join(packages))
