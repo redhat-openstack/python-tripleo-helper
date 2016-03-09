@@ -82,9 +82,14 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
         vm_undercloud.openstack_undercloud_install(
             config['undercloud']['image_path'],
             config['undercloud']['image_checksum'])
-        vm_undercloud.overcloud_image_upload(config['overcloud'])
+
+        vm_undercloud.fetch_overcloud_images(config['overcloud'])
+        vm_undercloud.overcloud_image_upload()
         vm_undercloud.load_instackenv()
-        vm_undercloud.start_overcloud_deploy()
+        vm_undercloud.create_flavor('baremetal')
+        for uuid in vm_undercloud.list_nodes():
+            vm_undercloud.set_flavor(uuid, 'baremetal')
+        vm_undercloud.start_overcloud_deploy(control_scale=1, compute_scale=1)
         vm_undercloud.run_tempest()
     except Exception as e:
         if host0:

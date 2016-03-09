@@ -57,7 +57,7 @@ class SshClient(object):
         self.load_private_key(key_filename)
         self._client = paramiko.SSHClient()
         self._client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        self._via_ip = via_ip
+        self.via_ip = via_ip
         self._transport = None
         self._started = False
         self.description = 'not started yet'
@@ -69,14 +69,13 @@ class SshClient(object):
             self._private_key = paramiko.RSAKey.from_private_key(fd)
 
     def _get_transport_via_ip(self):
-        exception = None
         for i in range(60):
             try:
                 channel = self._client.get_transport().open_channel(
                     'direct-tcpip',
                     (self._hostname, 22),
-                    (self._via_ip, 0))
-            except ssh_exception.ChannelException as exception:
+                    (self.via_ip, 0))
+            except ssh_exception.ChannelException:
                 LOG.debug('%s creating the direct-tcip connections' % self.description)
                 time.sleep(1)
             else:
@@ -84,10 +83,10 @@ class SshClient(object):
                 transport.start_client()
                 transport.auth_publickey(self._user, self._private_key)
                 return transport
-        raise exception
+        raise Exception()
 
     def _get_transport(self):
-        if self._via_ip:
+        if self.via_ip:
             transport = self._get_transport_via_ip()
         else:
             transport = self._client.get_transport()
@@ -101,11 +100,11 @@ class SshClient(object):
         If it doesn't succed to connect then the function will raise
         an SSHException.
         """
-        if self._via_ip:
-            connect_to = self._via_ip
+        if self.via_ip:
+            connect_to = self.via_ip
             self.description = '[%s@%s via %s]' % (self._user,
                                                    self._hostname,
-                                                   self._via_ip)
+                                                   self.via_ip)
         else:
             connect_to = self._hostname
             self.description = '[%s@%s]' % (self._user,
@@ -189,14 +188,15 @@ class SshClient(object):
         channel.exec_command(cmd)
 
         while True:
-            if channel.exit_status_ready():
-                break
+            received = None
             rl, _, _ = select.select([channel], [], [], 30)
             if rl:
                 received = channel.recv(1024).decode('UTF-8', 'ignore').strip()
                 if received:
                     LOG.debug(received)
                     cmd_output.write(received)
+            if channel.exit_status_ready() and not received:
+                break
         cmd_output = cmd_output.getvalue()
         exit_status = channel.exit_status
         try:

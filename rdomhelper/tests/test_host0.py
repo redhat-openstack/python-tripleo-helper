@@ -16,11 +16,8 @@
 
 import pytest
 
-import rdomhelper.host0
 
 expectation_build_undercloud = [
-    {'func': 'run', 'args': {
-        'cmd': 'uname -a'}},
     {'func': 'run', 'args': {
         'cmd': 'sysctl net.ipv4.ip_forward=1'}},
     {'func': 'create_file', 'args': {
@@ -41,21 +38,12 @@ expectation_build_undercloud = [
      'args': {
          'cmd': "/sbin/ip n | grep $(tripleo get-vm-mac instack) | awk '{print $1;}'"},
      'res': ('192.168.122.234', 0,)},
-    {'func': 'run', 'args': {
-        'cmd': 'uname -a'},
-     'hostname': '192.168.122.234'},
 ]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_build_undercloud], indirect=['fake_sshclient'])
-def test_build_undercloud_on_libvirt(fake_sshclient):
-    test_host0 = rdomhelper.host0.Host0(hostname='my-host')
-
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_host0._ssh_pool.build_ssh_client(
-        test_host0.hostname, 'stack', None, None)
-
-    undercloud = test_host0.build_undercloud_on_libvirt(
+def test_build_undercloud_on_libvirt(host0):
+    undercloud = host0.build_undercloud_on_libvirt(
         'http://host/guest_image_path.qcow2', 'f982ce8e27bc8222a0c1f0e769a31de1',
         rhsm={'login': 'user', 'password': 'password'})
 
@@ -64,23 +52,21 @@ def test_build_undercloud_on_libvirt(fake_sshclient):
 
 
 expectation_deploy_hypervisor = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
-    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet libvirt-daemon-driver-nwfilter libvirt-client libvirt-daemon-config-network libvirt-daemon-driver-nodedev libvirt-daemon-kvm libvirt-python libvirt-daemon-config-nwfilter libvirt-glib libvirt-daemon libvirt-daemon-driver-storage libvirt libvirt-daemon-driver-network libvirt-devel libvirt-gobject libvirt-daemon-driver-secret libvirt-daemon-driver-qemu libvirt-daemon-driver-interface libguestfs-tools.noarch virt-install genisoimage openstack-tripleo libguestfs-tools instack-undercloud'}},
+    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet libvirt-daemon-driver-nwfilter libvirt-client libvirt-daemon-config-network libvirt-daemon-driver-nodedev libvirt-daemon-kvm libvirt-python libvirt-daemon-config-nwfilter libvirt-glib libvirt-daemon libvirt-daemon-driver-storage libvirt libvirt-daemon-driver-network libvirt-devel libvirt-gobject libvirt-daemon-driver-secret libvirt-daemon-driver-qemu libvirt-daemon-driver-interface libguestfs-tools virt-install genisoimage openstack-tripleo instack-undercloud'}},
     {'func': 'run', 'args': {'cmd': 'sed -i "s,#auth_unix_rw,auth_unix_rw," /etc/libvirt/libvirtd.conf'}},
     {'func': 'run', 'args': {'cmd': 'systemctl start libvirtd'}},
     {'func': 'run', 'args': {'cmd': 'systemctl status libvirtd'}},
-    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet yum-utils iptables libselinux-python psmisc redhat-lsb-core rsync'}},
+    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet yum-utils iptables libselinux-python psmisc redhat-lsb-core rsync libguestfs-tools'}},
     {'func': 'run', 'args': {'cmd': 'systemctl disable NetworkManager'}},
     {'func': 'run', 'args': {'cmd': 'systemctl stop NetworkManager'}},
     {'func': 'run', 'args': {'cmd': 'pkill -9 dhclient'}},
     {'func': 'run', 'args': {'cmd': 'yum remove -y --quiet cloud-init NetworkManager'}},
     {'func': 'run', 'args': {'cmd': 'systemctl enable network'}},
     {'func': 'run', 'args': {'cmd': 'systemctl restart network'}},
-    {'func': 'run', 'args': {'cmd': 'yum update -y'}},
+    {'func': 'run', 'args': {'cmd': 'yum update -y --quiet'}},
 ]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_deploy_hypervisor], indirect=['fake_sshclient'])
-def test_deploy_hypervisor(fake_sshclient):
-    test_host0 = rdomhelper.host0.Host0(hostname='my-host')
-    test_host0.deploy_hypervisor()
+def test_deploy_hypervisor(host0):
+    host0.deploy_hypervisor()

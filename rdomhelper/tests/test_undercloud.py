@@ -16,8 +16,8 @@
 
 import pytest
 
+import rdomhelper.tests.test_server
 import rdomhelper.undercloud
-
 
 files = {
     'overcloud-full': {
@@ -37,17 +37,11 @@ expectation_set_selinux = [
         'content': 'SELINUX=permissive\nSELINUXTYPE=targeted\n'
     }},
 ]
-expectation = [{'func': 'run', 'args': {'cmd': 'uname -a'}}]
-expectation += expectation_set_selinux
 
 
-@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
-def test_set_selinux(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.set_selinux('permissive')
+@pytest.mark.parametrize('fake_sshclient', [expectation_set_selinux], indirect=['fake_sshclient'])
+def test_set_selinux(undercloud):
+    undercloud.set_selinux('permissive')
 
 
 expectation_fix_hostname = [
@@ -56,21 +50,14 @@ expectation_fix_hostname = [
     {'func': 'run', 'args': {'cmd': 'cat /etc/hostname'}, 'res': ('a.b\n', 0,)},
     {'func': 'run', 'args': {'cmd': "sed -i 's,127.0.0.1,127.0.0.1 hostname a.b hostname.localdomain undercloud.openstacklocal,' /etc/hosts"}},
 ]
-expectation = [{'func': 'run', 'args': {'cmd': 'uname -a'}}]
-expectation += expectation_fix_hostname
 
 
-@pytest.mark.parametrize('fake_sshclient', [expectation], indirect=['fake_sshclient'])
-def test_fix_hostname(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.fix_hostname()
+@pytest.mark.parametrize('fake_sshclient', [expectation_fix_hostname], indirect=['fake_sshclient'])
+def test_fix_hostname(undercloud):
+    undercloud.fix_hostname()
 
 
 expectation_set_ctlplane_mtu = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
     {'func': 'run', 'args': {'cmd': 'yum install -y --quiet instack-undercloud'}},
     {'func': 'run', 'args': {'cmd': 'test ! -f /etc/os-net-config/config.json'}},
     {'func': 'run', 'args': {'cmd': 'sed -i \'s/"name": "br-ctlplane",/"name": "br-ctlplane",\\n      '
@@ -83,16 +70,11 @@ expectation_set_ctlplane_mtu = [
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_set_ctlplane_mtu], indirect=['fake_sshclient'])
-def test_set_ctlplane_mtu(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.set_ctlplane_mtu(1400)
+def test_set_ctlplane_mtu(undercloud):
+    undercloud.set_ctlplane_mtu(1400)
 
 
 expectation_openstack_undercloud_install = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
     {'func': 'create_file', 'args': {
         'path': '/home/stack/guest_image.qcow2.md5',
         'content': 'acaf294494448266313343dec91ce91a /home/stack/guest_image.qcow2\n'
@@ -108,17 +90,12 @@ expectation_openstack_undercloud_install = [
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_openstack_undercloud_install], indirect=['fake_sshclient'])
-def test_openstack_undercloud_install(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.openstack_undercloud_install(
+def test_openstack_undercloud_install(undercloud):
+    undercloud.openstack_undercloud_install(
         'http://host/guest_image_path.qcow2', 'acaf294494448266313343dec91ce91a')
 
 
 expectation_configure = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
     {'func': 'run', 'args': {'cmd': 'subscription-manager repos \'--disable=*\' --enable=rhel-7-server-rpms'}},
     {'func': 'run', 'args': {'cmd': 'yum install -y --quiet https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'}},
     {'func': 'run', 'args': {'cmd': 'echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload'}}]
@@ -133,16 +110,14 @@ expectation_configure += expectation_fix_hostname
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_configure], indirect=['fake_sshclient'])
-def test_configure(fake_sshclient):
-    undercloud = rdomhelper.undercloud.Undercloud(hostname='192.168.1.1')
+def test_configure(undercloud):
     repositories = [
         {'type': 'rhsm_channel', 'name': 'rhel-7-server-rpms'}
     ]
     undercloud.configure(repositories)
 
 
-expectation_overcloud_load_image = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
+expectation_fetch_overcloud_images = [
     {'func': 'create_file', 'args': {
         'path': '/home/stack/deploy-ramdisk-ironic.tar.md5',
         'content': '5c8fd42deb34831377f0bf69fbe71f4b /home/stack/deploy-ramdisk-ironic.tar\n'
@@ -155,22 +130,27 @@ expectation_overcloud_load_image = [
     }},
     {'func': 'run', 'args': {'cmd': '. stackrc; md5sum -c /home/stack/overcloud-full.tar.md5'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; tar xf /home/stack/overcloud-full.tar'}},
+]
+
+
+@pytest.mark.parametrize('fake_sshclient', [expectation_fetch_overcloud_images], indirect=['fake_sshclient'])
+def test_fetch_overcloud_images(undercloud):
+    undercloud.add_environment_file(user='stack', filename='stackrc')
+    undercloud.fetch_overcloud_images(files)
+
+
+expectation_overcloud_load_image = [
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack overcloud image upload'}},
 ]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_overcloud_load_image], indirect=['fake_sshclient'])
-def test_overcloud_image_upload(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.add_environment_file(user='stack', filename='stackrc')
-    test_undercloud.overcloud_image_upload(files)
+def test_overcloud_image_upload(undercloud):
+    undercloud.add_environment_file(user='stack', filename='stackrc')
+    undercloud.overcloud_image_upload()
 
 
 expectation_load_instackenv = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal import --json instackenv.json'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; grep --count \'"cpu"\' instackenv.json'}, 'res': ('4\n', 0)},
     {'func': 'run', 'args': {'cmd': '. stackrc; ironic node-list|grep -c "power off"'}, 'res': ('4\n', 0)},
@@ -179,53 +159,37 @@ expectation_load_instackenv = [
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_load_instackenv], indirect=['fake_sshclient'])
-def test_load_instackenv(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.load_instackenv()
+def test_load_instackenv(undercloud):
+    undercloud.load_instackenv()
 
 
 expectation_start_overcloud = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack flavor create --id auto --ram 4096 --disk 40 --vcpus 1 baremetal'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack flavor set --property "cpu_arch"="x86_64" --property "capabilities:boot_option"="local" baremetal'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack flavor set --property "capabilities:profile"="baremetal" baremetal'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; for uuid in $(ironic node-list|awk \'/available/ {print $2}\'); do ironic node-update $uuid add properties/capabilities=profile:baremetal,boot_option:local; done'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack overcloud deploy --debug ' +
-                             '--templates ' +
-                             '--log-file overcloud_deployment.log ' +
-                             '--libvirt-type=qemu ' +
-                             '--ntp-server north-america.pool.ntp.org ' +
-                             '--control-scale 1 ' +
-                             '--compute-scale 1 ' +
-                             '--ceph-storage-scale 0 ' +
-                             '--block-storage-scale 0 ' +
-                             '--swift-storage-scale 0 ' +
-                             '--control-flavor baremetal ' +
-                             '--compute-flavor baremetal ' +
-                             '--ceph-storage-flavor baremetal ' +
-                             '--block-storage-flavor baremetal ' +
-                             '--swift-storage-flavor baremetal'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; test -f overcloudrc'}},
-
-]
+    {'func': 'run', 'args': {'cmd': (
+        '. stackrc; openstack overcloud deploy '
+        '--templates '
+        '--log-file overcloud_deployment.log '
+        '--ntp-server north-america.pool.ntp.org '
+        '--control-scale 1 '
+        '--compute-scale 1 '
+        '--ceph-storage-scale 0 '
+        '--block-storage-scale 0 '
+        '--swift-storage-scale 0 '
+        '--control-flavor baremetal '
+        '--compute-flavor baremetal '
+        '--ceph-storage-flavor baremetal '
+        '--block-storage-flavor baremetal '
+        '--swift-storage-flavor baremetal ')}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; test -f overcloudrc'}}]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_start_overcloud], indirect=['fake_sshclient'])
-def test_start_overcloud_deploy(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.start_overcloud_deploy()
+def test_start_overcloud_deploy(undercloud):
+    undercloud.start_overcloud_deploy(control_scale=1, compute_scale=1)
 
 
 expectation_run_tempest = [
-    {'func': 'run', 'args': {'cmd': 'uname -a'}},
     {'func': 'run', 'args': {'cmd': '. overcloudrc; test -d tempest || mkdir tempest'}},
-    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet openstack-tempest-liberty'}},
+    {'func': 'run', 'args': {'cmd': '. overcloudrc; yum install -y --quiet openstack-tempest-liberty'}},
     {'func': 'run', 'args': {'cmd': '. overcloudrc; cd tempest && /usr/share/openstack-tempest-liberty/tools/configure-tempest-directory'}},
     {'func': 'run', 'args': {'cmd': '. overcloudrc; neutron net-show ext-net || neutron net-create ext-net'}},
     {'func': 'run', 'args': {'cmd': '. overcloudrc; neutron subnet-show ext-subnet || neutron subnet-create ext-net --name ext-subnet   --allocation-pool start=172.16.23.40,end=172.16.23.50   --disable-dhcp --gateway 172.16.23.1 172.16.23.0/24'}},
@@ -237,9 +201,5 @@ expectation_run_tempest = [
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_run_tempest], indirect=['fake_sshclient'])
-def test_run_tempest(fake_sshclient):
-    test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
-    # TODO(Gonéri): manually create the connection 'stack' in the pool
-    test_undercloud._ssh_pool.build_ssh_client(
-        test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.run_tempest()
+def test_run_tempest(undercloud):
+    undercloud.run_tempest()

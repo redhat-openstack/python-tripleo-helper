@@ -71,13 +71,13 @@ class OVBUndercloud(Undercloud):
         Undercloud.__init__(self, hostname=undercloud_ip, **kwargs)
 
         content = """
-    DEVICE="eth1"
-    BOOTPROTO=static
-    IPADDR=192.0.2.240
-    NETMASK=255.255.255.0
-    ONBOOT=yes
-    MTU=1400
-    """
+DEVICE="eth1"
+BOOTPROTO=static
+IPADDR=192.0.2.240
+NETMASK=255.255.255.0
+ONBOOT=yes
+MTU=1400
+"""
         self.create_file(
             '/etc/sysconfig/network-scripts/ifcfg-eth1',
             content=content)

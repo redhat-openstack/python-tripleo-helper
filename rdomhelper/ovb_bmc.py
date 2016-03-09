@@ -29,17 +29,23 @@ class OvbBmc(Server):
 
     This host is a nova virtual machine that will host IPMI services. Ironic will
     use these services to manage the virtual-baremetal nodes.
+
+    For each baremetal node, the BMC has:
+
+    - an NIC (ethX) with a specific IP address
+    - an openstackbmc instance (IPMI server) associated to the nova host
     """
     def __init__(
             self,
-            nova_api=None, neutron=None, provisioner=None,
-            key_filename=None, image_name=None, ip=None,
-            flavor='m1.small', os_username=None, os_password=None,
-            os_tenant_name=None, os_auth_url=None, **kwargs):
+            nova_api=None, neutron=None, keypair=None,
+            key_filename=None, security_groups=[], image_name=None, ip=None,
+            flavor='m1.small', os_username=None,
+            os_password=None, os_tenant_name=None, os_auth_url=None, **kwargs):
 
         assert key_filename
         self.nova_api = nova_api
         self.neutron = neutron
+        self._keypair = keypair
         self.os_username = os_username
         self.os_password = os_password
         self.os_tenant_name = os_tenant_name
@@ -60,8 +66,9 @@ class OvbBmc(Server):
 
         image_id_to_boot_from = os_utils.get_image_id(nova_api, image_name)
         flavor_id = os_utils.get_flavor_id(nova_api, flavor)
-        keypair_id = os_utils.get_keypair_id(nova_api, provisioner['keypair'])
-        network_id = os_utils.get_network_id(nova_api, provisioner['network'])
+        keypair_id = os_utils.get_keypair_id(nova_api, self._keypair)
+        # TODO(Gonéri): this enforce the use of a private network called 'private'
+        network_id = os_utils.get_network_id(nova_api, 'private')
         nics = [{'net-id': network_id}, {'port-id': provision_port_id}]
 
         self.os_instance = os_provisioner.build_openstack_instance(
@@ -78,16 +85,14 @@ class OvbBmc(Server):
 
         bmc_ip = os_utils.add_a_floating_ip(nova_api, self.os_instance)
         os_utils.add_security_groups(self.os_instance,
-                                     provisioner['security-groups'])
+                                     security_groups)
         os_provisioner.add_provision_security_group(nova_api)
         os_utils.add_security_groups(self.os_instance, ['provision'])
-        LOG.info("add security groups '%s'" %
-                 provisioner['security-groups'])
+        LOG.info("add security groups '%s'" % security_groups)
 
         Server.__init__(self, hostname=bmc_ip, key_filename=key_filename, **kwargs)
 
-        form_data = {'router': {'name': 'bmc_router'}}
-        self.router_id = self.neutron.create_router(body=form_data)['router']['id']
+        self.router_id = self.neutron.list_routers(name='router').get('routers')[0]['id']
         body_sample = {
             "network": {
                 "name": 'provision_bmc',

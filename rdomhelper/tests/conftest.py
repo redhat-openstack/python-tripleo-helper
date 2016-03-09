@@ -1,6 +1,9 @@
 import copy
 
+import rdomhelper.host0
+import rdomhelper.server
 import rdomhelper.ssh
+import rdomhelper.undercloud
 
 import pytest
 
@@ -73,3 +76,39 @@ def fake_sshclient(monkeypatch, request):
         msg = 'Some expectations remain unevaluated: %s' % FakeSshClient.expectation
         assert not FakeSshClient.expectation, msg
     request.addfinalizer(fin)
+
+
+@pytest.fixture
+def server_without_root_enabled(fake_sshclient):
+    s = rdomhelper.server.Server(hostname='toto')
+    return s
+
+
+@pytest.fixture
+def server(server_without_root_enabled):
+    s = rdomhelper.server.Server(hostname='toto')
+    s._root_user_enabled = True
+    ssh = FakeSshClient(None, None, None, None)
+    s._ssh_pool.add_ssh_client('stack', ssh)
+    s._ssh_pool.add_ssh_client('root', ssh)
+    return s
+
+
+@pytest.fixture
+def undercloud(fake_sshclient):
+    s = rdomhelper.undercloud.Undercloud(hostname='toto')
+    s._root_user_enabled = True
+    ssh = FakeSshClient(None, None, None, None)
+    s._ssh_pool.add_ssh_client('stack', ssh)
+    s._ssh_pool.add_ssh_client('root', ssh)
+    return s
+
+
+@pytest.fixture
+def host0(fake_sshclient):
+    s = rdomhelper.host0.Host0(hostname='toto')
+    s._root_user_enabled = True
+    ssh = FakeSshClient(None, None, None, None)
+    s._ssh_pool.add_ssh_client('stack', ssh)
+    s._ssh_pool.add_ssh_client('root', ssh)
+    return s
