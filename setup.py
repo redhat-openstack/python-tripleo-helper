@@ -32,7 +32,7 @@ def _get_requirements():
                 if not dep.startswith('-e')]
 
 _README_CONTENT = open("%s/%s" % (os.path.dirname(os.path.abspath(__file__)),
-                                  "README.md")).read()
+                                  "README.rst")).read()
 
 setuptools.setup(
     name='python-rdo-m-helper',
