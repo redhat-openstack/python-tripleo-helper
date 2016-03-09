@@ -91,7 +91,7 @@ def test_set_ctlplane_mtu(fake_sshclient):
     test_undercloud.set_ctlplane_mtu(1400)
 
 
-expectation_install = [
+expectation_openstack_undercloud_install = [
     {'func': 'run', 'args': {'cmd': 'uname -a'}},
     {'func': 'create_file', 'args': {
         'path': '/home/stack/guest_image.qcow2.md5',
@@ -107,13 +107,13 @@ expectation_install = [
 ]
 
 
-@pytest.mark.parametrize('fake_sshclient', [expectation_install], indirect=['fake_sshclient'])
-def test_install(fake_sshclient):
+@pytest.mark.parametrize('fake_sshclient', [expectation_openstack_undercloud_install], indirect=['fake_sshclient'])
+def test_openstack_undercloud_install(fake_sshclient):
     test_undercloud = rdomhelper.undercloud.Undercloud(hostname='my-host')
     # TODO(Gonéri): manually create the connection 'stack' in the pool
     test_undercloud._ssh_pool.build_ssh_client(
         test_undercloud.hostname, 'stack', None, None)
-    test_undercloud.install(
+    test_undercloud.openstack_undercloud_install(
         'http://host/guest_image_path.qcow2', 'acaf294494448266313343dec91ce91a')
 
 

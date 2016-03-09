@@ -54,7 +54,7 @@ class Undercloud(Server):
         hostname_f = self.run('cat /etc/hostname')[0].rstrip('\n')
         self.run("sed -i 's,127.0.0.1,127.0.0.1 %s %s %s undercloud.openstacklocal,' /etc/hosts" % (hostname_s, hostname_f, hostname))
 
-    def install(self, guest_image_path, guest_image_checksum):
+    def openstack_undercloud_install(self, guest_image_path, guest_image_checksum):
         """Deploy an undercloud on the host.
         """
         # TODO(Gonéri) this method should be splitted/simplified.

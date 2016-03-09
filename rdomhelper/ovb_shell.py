@@ -273,7 +273,7 @@ undercloud_admin_vip = 192.0.2.201
             undercloud_ip=undercloud.hostname), user='stack')
     undercloud.configure(config['undercloud']['repositories'])
     undercloud.set_ctlplane_mtu(1400)
-    undercloud.install(
+    undercloud.openstack_undercloud_install(
         config['undercloud']['image_path'],
         config['undercloud']['image_checksum'])
 

@@ -79,8 +79,9 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
 
         vm_undercloud.configure(config['undercloud']['repositories'])
         vm_undercloud.set_ctlplane_mtu(1400)
-        vm_undercloud.install(config['undercloud']['image_path'],
-                              config['undercloud']['image_checksum'])
+        vm_undercloud.openstack_undercloud_install(
+            config['undercloud']['image_path'],
+            config['undercloud']['image_checksum'])
         vm_undercloud.overcloud_image_upload(config['overcloud'])
         vm_undercloud.load_instackenv()
         vm_undercloud.start_overcloud_deploy()
