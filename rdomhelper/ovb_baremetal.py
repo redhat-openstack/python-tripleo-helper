@@ -19,6 +19,7 @@ import concurrent.futures
 import json
 import logging
 
+import rdomhelper.baremetal
 from rdomhelper import ovb_bmc
 import rdomhelper.provisioners.openstack.provisioner as os_provisioner
 from rdomhelper.provisioners.openstack import utils as os_utils
@@ -123,9 +124,9 @@ class Baremetal(server.Server):
         undercloud.run(command.format(node_ip=self.hostname), user='stack', success_status=(0, 255,))
 
 
-class BaremetalFactory(object):
+class BaremetalFactory(rdomhelper.baremetal.BaremetalFactory):
     def __init__(self, nova_api, neutron, keypair, key_filename, security_groups,
-                 rdo_m_subnet_id=None, os_params={}):
+                 os_params={}):
         self.instackenv = []
         self.nova_api = nova_api
         self.neutron = neutron
@@ -134,7 +135,7 @@ class BaremetalFactory(object):
         self._key_filename = key_filename
         self._security_groups = security_groups
         self.nodes = []
-        self.rdo_m_subnet_id = rdo_m_subnet_id
+
         if os_params:
             self.bmc = self.create_bmc(**os_params)
 
@@ -178,10 +179,6 @@ class BaremetalFactory(object):
                     "pm_password": "password",
                     "pm_addr": pm_addr
                 })
-
-    def get_instackenv_json(self):
-        """Return the instackenv.json conent."""
-        return json.dumps(self.instackenv)
 
     def set_ironic_uuid(self, uuid_list):
         """Map a list of Ironic UUID to BM nodes.

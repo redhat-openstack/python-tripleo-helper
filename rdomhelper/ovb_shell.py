@@ -156,7 +156,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
         baremetal_factory.reload_environment(undercloud)
     else:
         purge_existing_ovb(nova_api, neutron)
-        rdo_m_subnet_id = initialize_network(neutron)
+        initialize_network(neutron)
         undercloud = ovb_undercloud.OVBUndercloud(
             nova_api=nova_api,
             neutron=neutron,
@@ -183,13 +183,13 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
             keypair=config['provisioner']['keypair'],
             key_filename=config['ssh']['private_key'],
             security_groups=config['provisioner']['security-groups'],
-            rdo_m_subnet_id=rdo_m_subnet_id,
             os_params={'os_username': os_username,
                        'os_password': os_password,
                        'os_tenant_name': os_tenant_name,
                        'os_auth_url': os_auth_url})
         undercloud.add_annotation('Creating the Baremetal VMs')
         baremetal_factory.initialize(size=7)
+        baremetal_factory.shutdown_nodes(undercloud)
         undercloud.create_file(
             'instackenv.json',
             baremetal_factory.get_instackenv_json(), user='stack')
@@ -239,10 +239,10 @@ undercloud_admin_vip = 192.0.2.201
             bm_node.pxe_netboot(filename='inspector.ipxe')
         undercloud.start_overcloud_inspector()
 
+        # if ipxe is frozen, the VM will stay running.
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1310778
+        baremetal_factory.shutdown_nodes(undercloud)
         for bm_node in baremetal_factory.nodes:
-            # if ipxe is frozen, the VM will stay running.
-            # https://bugzilla.redhat.com/show_bug.cgi?id=1310778
-            bm_node.shutdown()
             bm_node.pxe_netboot(filename='boot.ipxe')
         undercloud.create_file(
             '/home/stack/network-environment.yaml',
