@@ -96,7 +96,11 @@ def test_openstack_undercloud_install(undercloud):
 
 
 expectation_configure = [
-    {'func': 'run', 'args': {'cmd': 'subscription-manager repos \'--disable=*\' --enable=rhel-7-server-rpms'}},
+    {'func': 'run', 'args': {'cmd': ("subscription-manager repos "
+                                     "'--disable=*' "
+                                     "--enable=rhel-7-server-rpms "
+                                     "--enable=rhel-7-server-optional-rpms "
+                                     "--enable=rhel-7-server-extras-rpms")}},
     {'func': 'run', 'args': {'cmd': 'yum install -y --quiet https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'}},
     {'func': 'run', 'args': {'cmd': 'echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload'}}]
 
@@ -111,6 +115,7 @@ expectation_configure += expectation_fix_hostname
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_configure], indirect=['fake_sshclient'])
 def test_configure(undercloud):
+    undercloud.rhsm_active = True
     repositories = [
         {'type': 'rhsm_channel', 'name': 'rhel-7-server-rpms'}
     ]

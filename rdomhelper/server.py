@@ -46,6 +46,11 @@ class Server(object):
         self._ssh_pool = ssh.PoolSshClient()
         self._redirect_to_host = redirect_to_host
         self._root_user_enabled = False
+        self.rhsm_active = False
+        self.rhsm_channels = [
+            'rhel-7-server-rpms',
+            'rhel-7-server-optional-rpms',
+            'rhel-7-server-extras-rpms']
 
     def enable_root_user(self, user):
         """Enable the root account on the remote host.
@@ -172,6 +177,7 @@ class Server(object):
             self.run('subscription-manager attach --pool %s' % pool_id)
         else:
             self.run('subscription-manager attach --auto')
+        self.rhsm_active = True
 
     def enable_repositories(self, repositories):
         """Enable a list of RHSM repositories.
@@ -179,9 +185,15 @@ class Server(object):
         :param repositories: a dict in this format:
             [{'type': 'rhsm_channel', 'name': 'rhel-7-server-rpms'}]
         """
-        rhsm_channels = [r['name'] for r in repositories if r['type'] == 'rhsm_channel']
-        if rhsm_channels:
-            subscription_cmd = "subscription-manager repos '--disable=*' --enable=" + ' --enable='.join(rhsm_channels)
+        for r in repositories:
+            if r['type'] != 'rhsm_channel':
+                continue
+            if r['name'] not in self.rhsm_channels:
+                self.rhsm_channels.append(r['name'])
+
+        if self.rhsm_active:
+            subscription_cmd = "subscription-manager repos '--disable=*' --enable=" + ' --enable='.join(
+                self.rhsm_channels)
             self.run(subscription_cmd)
 
         repo_files = [r for r in repositories if r['type'] == 'yum_repo']
