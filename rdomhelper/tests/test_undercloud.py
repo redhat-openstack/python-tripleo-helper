@@ -80,8 +80,16 @@ expectation_openstack_undercloud_install = [
         'content': 'acaf294494448266313343dec91ce91a /home/stack/guest_image.qcow2\n'
     }},
     {'func': 'run', 'args': {'cmd': 'md5sum -c /home/stack/guest_image.qcow2.md5'}},
-    {'func': 'run', 'args': {'cmd': 'repoquery --whatprovides /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.pp'}, 'res': ('instack-undercloud-0:2.2.0-1.el7ost.noarch\n', 0,)},
-    {'func': 'run', 'args': {'cmd': 'sed -i "s/.*Keystone_domain\\[\'heat_domain\'\\].*/Service\\[\'keystone\'\\] -> Class\\[\'::keystone::roles::admin\'\\] -> Class\\[\'::heat::keystone::domain\'\\]/" /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.pp'}},
+    {'func': 'run', 'args': {'cmd': (
+        'repoquery --whatprovides /usr/share/instack-undercloud/'
+        'puppet-stack-config/puppet-stack-config.pp')
+    }, 'res': ('instack-undercloud-0:2.2.0-1.el7ost.noarch\n', 0,)},
+    {'func': 'run', 'args': {'cmd': (
+        'sed -i "s/.*Keystone_domain\\[\'heat_domain\'\\].*/Service\\'
+        '[\'keystone\'\\] -> Class\\[\'::keystone::roles::admin\'\\] '
+        '-> Class\\[\'::heat::keystone::domain\'\\]/" '
+        '/usr/share/instack-undercloud/puppet-stack-config/'
+        'puppet-stack-config.pp')}},
     {'func': 'run', 'args': {'cmd': 'openstack undercloud install'}},
     {'func': 'run', 'args': {'cmd': 'rpm -qa openstack-ironic-api'}, 'res': ('openstack-ironic-api-4.2.2-3.el7ost.noarch\n', 0,)},
     {'func': 'run', 'args': {'cmd': 'systemctl start openstack-ironic-api.service'}},
@@ -101,7 +109,7 @@ expectation_configure = [
                                      "--enable=rhel-7-server-rpms "
                                      "--enable=rhel-7-server-optional-rpms "
                                      "--enable=rhel-7-server-extras-rpms")}},
-    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'}},
+    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet bob'}},
     {'func': 'run', 'args': {'cmd': 'echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload'}}]
 
 expectation_configure += rdomhelper.tests.test_server.expectation_create_user
@@ -116,6 +124,7 @@ expectation_configure += expectation_fix_hostname
 @pytest.mark.parametrize('fake_sshclient', [expectation_configure], indirect=['fake_sshclient'])
 def test_configure(undercloud):
     undercloud.rhsm_active = True
+    undercloud.nosync_rpm = 'bob'
     repositories = [
         {'type': 'rhsm_channel', 'name': 'rhel-7-server-rpms'}
     ]
@@ -195,13 +204,33 @@ def test_start_overcloud_deploy(undercloud):
 expectation_run_tempest = [
     {'func': 'run', 'args': {'cmd': '. overcloudrc; test -d tempest || mkdir tempest'}},
     {'func': 'run', 'args': {'cmd': '. overcloudrc; yum install -y --quiet openstack-tempest-liberty'}},
-    {'func': 'run', 'args': {'cmd': '. overcloudrc; cd tempest && /usr/share/openstack-tempest-liberty/tools/configure-tempest-directory'}},
-    {'func': 'run', 'args': {'cmd': '. overcloudrc; neutron net-show ext-net || neutron net-create ext-net'}},
-    {'func': 'run', 'args': {'cmd': '. overcloudrc; neutron subnet-show ext-subnet || neutron subnet-create ext-net --name ext-subnet   --allocation-pool start=172.16.23.40,end=172.16.23.50   --disable-dhcp --gateway 172.16.23.1 172.16.23.0/24'}},
-    {'func': 'run', 'args': {'cmd': '. overcloudrc; neutron net-show ext-net -F id -f value'}, 'res': ('lets_pretend_is_an_id\n', 0,)},
-    {'func': 'run', 'args': {'cmd': '. overcloudrc; cd tempest && tools/config_tempest.py --out etc/tempest.conf --network-id lets_pretend_is_an_id --deployer-input ~/tempest-deployer-input.conf --debug --create --image /home/stack/guest_image.qcow2 identity.uri $OS_AUTH_URL identity.admin_password $OS_PASSWORD network.tenant_network_cidr 192.168.0.0/24 object-storage.operator_role swiftoperator compute.image_ssh_user cloud-user compute.ssh_user cloud-user scenario.ssh_user cloud-user compute.flavor_ref 2 compute.flavor_ref_alt 2'}},
-    {'func': 'run', 'args': {'cmd': '. overcloudrc; cd tempest && tools/run-tests.sh tempest'}},
-
+    {'func': 'run', 'args': {'cmd': (
+        '. overcloudrc; cd tempest && /usr/share/openstack-tempest-liberty/'
+        'tools/configure-tempest-directory')}},
+    {'func': 'run', 'args': {'cmd': (
+        '. overcloudrc; neutron net-show ext-net '
+        '|| neutron net-create ext-net')}},
+    {'func': 'run', 'args': {'cmd': (
+        '. overcloudrc; neutron subnet-show ext-subnet || neutron '
+        'subnet-create ext-net --name ext-subnet   --allocation-pool '
+        'start=172.16.23.40,end=172.16.23.50   --disable-dhcp '
+        '--gateway 172.16.23.1 172.16.23.0/24')}},
+    {'func': 'run', 'args': {
+        'cmd': '. overcloudrc; neutron net-show ext-net -F id -f value'},
+     'res': ('lets_pretend_is_an_id\n', 0,)},
+    {'func': 'run', 'args': {'cmd': (
+        '. overcloudrc; cd tempest && tools/config_tempest.py --out '
+        'etc/tempest.conf --network-id lets_pretend_is_an_id '
+        '--deployer-input ~/tempest-deployer-input.conf --debug --create '
+        '--image /home/stack/guest_image.qcow2 identity.uri $OS_AUTH_URL '
+        'identity.admin_password $OS_PASSWORD network.tenant_network_cidr '
+        '192.168.0.0/24 object-storage.operator_role swiftoperator compute.'
+        'image_ssh_user cloud-user compute.ssh_user cloud-user '
+        'scenario.ssh_user cloud-user compute.flavor_ref 2 compute.flavor'
+        '_ref_alt 2')}},
+    {'func': 'run', 'args': {'cmd': (
+        '. overcloudrc; cd '
+        'tempest && tools/run-tests.sh tempest')}},
 ]
 
 

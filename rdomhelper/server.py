@@ -51,6 +51,7 @@ class Server(object):
             'rhel-7-server-rpms',
             'rhel-7-server-optional-rpms',
             'rhel-7-server-extras-rpms']
+        self.nosync_rpm = 'https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'
 
     def enable_root_user(self, user):
         """Enable the root account on the remote host.
@@ -148,7 +149,7 @@ class Server(object):
         speed up the installation.
         """
         _, rc = self.yum_install(
-            ['https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'],
+            [self.nosync_rpm],
             ignore_error=True)
         if rc == 0:
             self.run('echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload')
