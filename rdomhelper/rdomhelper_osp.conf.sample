@@ -45,14 +45,3 @@ host0:
 undercloud:
     repositories: *DEFAULT_REPOSITORIES
     image_path: http://192.168.1.2/brewroot/packages/rhel-guest-image/7.2/20160302.0/images/rhel-guest-image-7.2-20160302.0.x86_64.qcow2
-    image_checksum: 5907366ad7abe80c63d2936b92dec704
-overcloud:
-    overcloud-full:
-        image_path: http://192.168.1.2/mburns/latest-8.0-images/overcloud-full.tar
-        checksum: 744a16412eb6b2df660292617e4e3bb5
-    ironic-python-agent:
-        image_path: http://192.168.1.2/ironic-python-agent_wipefs.tar
-        checksum: a91eb0ac0c0fe1da7c186fd66a096348
-    deploy-ramdisk-ironic:
-        image_path: http://192.168.1.2/mburns/latest-8.0-images/deploy-ramdisk-ironic.tar
-        checksum: 5c8fd42deb34831377f0bf69fbe71f4b

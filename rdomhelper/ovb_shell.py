@@ -174,7 +174,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
         undercloud.install_collectd()
         undercloud.install_grafana()
         undercloud.add_annotation('Downloading overcloud images')
-        undercloud.fetch_overcloud_images(config['overcloud'])
+        undercloud.fetch_overcloud_images(config.get('overcloud'))
         undercloud.inject_collectd('overcloud-full.qcow2')
 
         baremetal_factory = ovb_baremetal.BaremetalFactory(

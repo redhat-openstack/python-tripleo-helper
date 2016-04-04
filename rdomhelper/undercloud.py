@@ -78,14 +78,19 @@ class Undercloud(Server):
         self.run('heat stack-list', user='stack')
 
     def fetch_overcloud_images(self, files):
-        for name in sorted(files):
-            self.fetch_image(
-                path=files[name]['image_path'],
-                checksum=files[name]['checksum'],
-                dest='/home/stack/%s.tar' % name,
-                user='stack')
-            self.run('tar xf /home/stack/%s.tar' % name,
-                     user='stack')
+        if files:
+            for name in sorted(files):
+                self.fetch_image(
+                    path=files[name]['image_path'],
+                    dest='/home/stack/%s.tar' % name,
+                    checksum=files[name].get('checksum'),
+                    user='stack')
+                self.run('tar xf /home/stack/%s.tar' % name,
+                         user='stack')
+        else:
+            # OSP specific
+            self.yum_install(['rhosp-director-images', 'rhosp-director-images-ipa'])
+            self.run('find /usr/share/rhosp-director-images/ -type f -name "*.tar" -exec tar xf {} \;', user='stack')
 
     def overcloud_image_upload(self):
         """Wrapper for: openstack overcloud image upload
