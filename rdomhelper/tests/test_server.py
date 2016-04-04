@@ -143,4 +143,4 @@ expectation_fetch_image = [
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_fetch_image], indirect=['fake_sshclient'])
 def test_fetch_image(server):
-    server.fetch_image('http://host/image', 'this_is_a_Bad_md5', 'somewhere')
+    server.fetch_image('http://host/image', 'somewhere', 'this_is_a_Bad_md5')

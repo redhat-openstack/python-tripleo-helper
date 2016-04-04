@@ -53,10 +53,10 @@ class Host0(Server):
         self.clean_system()
         self.yum_update()
 
-    def build_undercloud_on_libvirt(self, image_path, image_checksum, rhsm=None):
+    def build_undercloud_on_libvirt(self, image_path, image_checksum=None, rhsm=None):
         """Build the Undercloud by using instack-virt-setup script."""
         self.run('sysctl net.ipv4.ip_forward=1')
-        self.fetch_image(path=image_path, checksum=image_checksum, dest='/home/stack/guest_image.qcow2',
+        self.fetch_image(path=image_path, dest='/home/stack/guest_image.qcow2', checksum=image_checksum,
                          user='stack')
         # NOTE(Gonéri): this is a hack for our OpenStack, the MTU of its outgoing route
         # is 1400 and libvirt do not provide a mechanism to adjust the guests MTU.
