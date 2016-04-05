@@ -22,13 +22,13 @@ import yaml
 
 import logging
 
-import rdomhelper.chaos_monkey
-from rdomhelper import logger
-from rdomhelper import ovb_baremetal
-from rdomhelper import ovb_undercloud
-from rdomhelper.provisioners.openstack import utils as os_utils
-import rdomhelper.undercloud
-import rdomhelper.watcher
+import tripleohelper.chaos_monkey
+from tripleohelper import logger
+from tripleohelper import ovb_baremetal
+from tripleohelper import ovb_undercloud
+from tripleohelper.provisioners.openstack import utils as os_utils
+import tripleohelper.undercloud
+import tripleohelper.watcher
 
 import neutronclient.common.exceptions
 import neutronclient.v2_0.client
@@ -120,16 +120,16 @@ def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
     undercloud.install_rally()
     for bm_node in baremetal_factory.nodes:
         bm_node.refresh_status(undercloud)
-    chaos = rdomhelper.chaos_monkey.ChaosMonkey()
+    chaos = tripleohelper.chaos_monkey.ChaosMonkey()
     for node in baremetal_factory.nodes:
         if node.flavor == 'control' and node._os_instance.status == 'ACTIVE':
             chaos.add_node(node)
     watchers = [
-        rdomhelper.watcher.Watcher(undercloud, 'nova list'),
-        rdomhelper.watcher.Watcher(undercloud, 'glance image-list'),
-        rdomhelper.watcher.Watcher(undercloud, 'neutron port-list'),
-        rdomhelper.watcher.Watcher(undercloud, 'neutron subnet-list'),
-        rdomhelper.watcher.Watcher(undercloud, 'rally (create-and-delete-stack_with_volume)', 'cd /home/stack/rally/samples/tasks/scenarios/heat && rally task start --task create-and-delete-stack_with_volume.json >> /tmp/rally_deployment_run.log 2>&1'),
+        tripleohelper.watcher.Watcher(undercloud, 'nova list'),
+        tripleohelper.watcher.Watcher(undercloud, 'glance image-list'),
+        tripleohelper.watcher.Watcher(undercloud, 'neutron port-list'),
+        tripleohelper.watcher.Watcher(undercloud, 'neutron subnet-list'),
+        tripleohelper.watcher.Watcher(undercloud, 'rally (create-and-delete-stack_with_volume)', 'cd /home/stack/rally/samples/tasks/scenarios/heat && rally task start --task create-and-delete-stack_with_volume.json >> /tmp/rally_deployment_run.log 2>&1'),
     ]
     for w in watchers:
         w.start()
@@ -221,7 +221,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
                                        os_password, os_tenant_name)
 
     if undercloud_ip:
-        undercloud = rdomhelper.undercloud.Undercloud(
+        undercloud = tripleohelper.undercloud.Undercloud(
             key_filename=config['ssh']['private_key'],
             hostname=undercloud_ip)
         baremetal_factory = ovb_baremetal.BaremetalFactory(

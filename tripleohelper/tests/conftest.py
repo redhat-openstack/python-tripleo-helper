@@ -1,14 +1,14 @@
 import copy
 
-import rdomhelper.host0
-import rdomhelper.server
-import rdomhelper.ssh
-import rdomhelper.undercloud
+import tripleohelper.host0
+import tripleohelper.server
+import tripleohelper.ssh
+import tripleohelper.undercloud
 
 import pytest
 
 
-class FakeSshClient(rdomhelper.ssh.SshClient):
+class FakeSshClient(tripleohelper.ssh.SshClient):
     expectation = []
 
     def __init__(self, hostname, user, key_filename, via_ip):
@@ -70,7 +70,7 @@ class FakeSshClient(rdomhelper.ssh.SshClient):
 @pytest.fixture(scope='function')
 def fake_sshclient(monkeypatch, request):
     FakeSshClient.expectation = copy.deepcopy(request.param)
-    monkeypatch.setattr('rdomhelper.ssh.SshClient', FakeSshClient)
+    monkeypatch.setattr('tripleohelper.ssh.SshClient', FakeSshClient)
 
     def fin():
         msg = 'Some expectations remain unevaluated: %s' % FakeSshClient.expectation
@@ -80,13 +80,13 @@ def fake_sshclient(monkeypatch, request):
 
 @pytest.fixture
 def server_without_root_enabled(fake_sshclient):
-    s = rdomhelper.server.Server(hostname='toto')
+    s = tripleohelper.server.Server(hostname='toto')
     return s
 
 
 @pytest.fixture
 def server(server_without_root_enabled):
-    s = rdomhelper.server.Server(hostname='toto')
+    s = tripleohelper.server.Server(hostname='toto')
     s._root_user_enabled = True
     ssh = FakeSshClient(None, None, None, None)
     s._ssh_pool.add_ssh_client('stack', ssh)
@@ -96,7 +96,7 @@ def server(server_without_root_enabled):
 
 @pytest.fixture
 def undercloud(fake_sshclient):
-    s = rdomhelper.undercloud.Undercloud(hostname='toto')
+    s = tripleohelper.undercloud.Undercloud(hostname='toto')
     s._root_user_enabled = True
     ssh = FakeSshClient(None, None, None, None)
     s._ssh_pool.add_ssh_client('stack', ssh)
@@ -106,7 +106,7 @@ def undercloud(fake_sshclient):
 
 @pytest.fixture
 def host0(fake_sshclient):
-    s = rdomhelper.host0.Host0(hostname='toto')
+    s = tripleohelper.host0.Host0(hostname='toto')
     s._root_user_enabled = True
     ssh = FakeSshClient(None, None, None, None)
     s._ssh_pool.add_ssh_client('stack', ssh)

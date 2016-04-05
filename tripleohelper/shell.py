@@ -21,10 +21,10 @@ import yaml
 import logging
 import traceback
 
-import rdomhelper.host0
-from rdomhelper import logger
-from rdomhelper.provisioners.openstack import provisioner as os_provisioner
-from rdomhelper import undercloud
+import tripleohelper.host0
+from tripleohelper import logger
+from tripleohelper.provisioners.openstack import provisioner as os_provisioner
+from tripleohelper import undercloud
 
 
 LOG = logging.getLogger('__chainsaw__')
@@ -55,9 +55,9 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
     try:
         rhsm = config.get('rhsm')
         if host0_ip:
-            host0 = rdomhelper.host0.Host0(hostname=host0_ip,
-                                           user=config['provisioner']['image'].get('user', 'root'),
-                                           key_filename=ssh['private_key'])
+            host0 = tripleohelper.host0.Host0(hostname=host0_ip,
+                                              user=config['provisioner']['image'].get('user', 'root'),
+                                              key_filename=ssh['private_key'])
         else:
             host0 = os_provisioner.deploy_host0(os_auth_url, os_username,
                                                 os_password, os_tenant_name,

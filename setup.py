@@ -18,7 +18,7 @@
 import os
 import setuptools
 
-from rdomhelper import version
+from tripleohelper import version
 
 
 def _get_requirements():
@@ -34,8 +34,9 @@ def _get_requirements():
 _README_CONTENT = open("%s/%s" % (os.path.dirname(os.path.abspath(__file__)),
                                   "README.rst")).read()
 
+
 setuptools.setup(
-    name='python-rdo-m-helper',
+    name='python-tripleo-helper',
     version=version.__version__,
     packages=setuptools.find_packages(),
     author="Red Hat ci team.",
@@ -47,7 +48,7 @@ setuptools.setup(
         "https://github.com/redhat-cip/python-dciclient.git"
         "#egg=python-dciclient"
     ],
-    url="https://github.com/redhat-cip/python-rdo-m-helper",
+    url="https://github.com/redhat-openstack/python-tripleo-helper",
     licence="Apache v2.0",
     include_package_data=True,
     classifiers=[
@@ -62,8 +63,8 @@ setuptools.setup(
     ],
     entry_points={
         "console_scripts": [
-            "chainsaw-libvirt = rdomhelper.shell:main",
-            "chainsaw-ovb = rdomhelper.ovb_shell:main"
+            "chainsaw-libvirt = tripleohelper.shell:main",
+            "chainsaw-ovb = tripleohelper.ovb_shell:main"
         ],
     }
 )

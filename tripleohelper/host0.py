@@ -14,8 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from rdomhelper.server import Server
-from rdomhelper.undercloud import Undercloud
+from tripleohelper.server import Server
+from tripleohelper.undercloud import Undercloud
 
 from jinja2 import Environment
 from jinja2 import FileSystemLoader

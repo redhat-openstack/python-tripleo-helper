@@ -20,8 +20,8 @@ import sys
 import time
 
 import novaclient.exceptions
-import rdomhelper.host0
-from rdomhelper.provisioners.openstack import utils
+import tripleohelper.host0
+from tripleohelper.provisioners.openstack import utils
 
 LOG = logging.getLogger('__chainsaw__')
 
@@ -89,7 +89,7 @@ def deploy_host0(os_auth_url, os_username, os_password, os_tenant_name,
         LOG.error("instance '%s' failed" % instance_name)
         sys.exit(1)
 
-    host0 = rdomhelper.host0.Host0(
+    host0 = tripleohelper.host0.Host0(
         hostname=host0_ip,
         user=provisioner['image'].get('user', 'root'),
         key_filename=private_key)

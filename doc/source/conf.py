@@ -38,7 +38,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Python-RDO-M-Helper'
+project = u'Python-TripleO-Helper'
 copyright = u'2016, Red Hat Distributed CI team'
 author = u'Red Hat Distributed CI team'
 
@@ -192,7 +192,7 @@ html_static_path = ['_static']
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Python-RDO-M-Helperdoc'
+htmlhelp_basename = 'Python-TripleO-Helperdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -214,7 +214,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Python-RDO-M-Helper.tex', u'Python-RDO-M-Helper Documentation',
+    (master_doc, 'Python-TripleO-Helper.tex', u'Python-TripleO-Helper Documentation',
      u'Red Hat Distributed CI team', 'manual'),
 ]
 
@@ -244,7 +244,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'python-rdo-m-helper', u'Python-RDO-M-Helper Documentation',
+    (master_doc, 'python-tripleo-helper', u'Python-TripleO-Helper Documentation',
      [author], 1)
 ]
 
@@ -258,8 +258,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Python-RDO-M-Helper', u'Python-RDO-M-Helper Documentation',
-     author, 'Python-RDO-M-Helper', 'One line description of project.',
+    (master_doc, 'Python-TripleO-Helper', u'Python-TripleO-Helper Documentation',
+     author, 'Python-TripleO-Helper', 'One line description of project.',
      'Miscellaneous'),
 ]
 

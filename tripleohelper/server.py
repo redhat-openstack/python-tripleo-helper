@@ -18,7 +18,7 @@
 import logging
 import os
 
-from rdomhelper import ssh
+from tripleohelper import ssh
 
 LOG = logging.getLogger('__chainsaw__')
 
@@ -29,7 +29,7 @@ class Server(object):
     This class comes with standard function to run command, copy files,
     install packages, activate YUM repositories...
 
-    It also provides some generic methodes specific to RDO-m, like the stack
+    It also provides some generic methodes specific to OpenStack, like the stack
     user creation.
     """
     def __init__(self, hostname, user='root', via_ip=None, key_filename=None,

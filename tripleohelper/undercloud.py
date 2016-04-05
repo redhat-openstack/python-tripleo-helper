@@ -17,7 +17,7 @@
 import logging
 import time
 
-from rdomhelper.server import Server
+from tripleohelper.server import Server
 
 LOG = logging.getLogger('__chainsaw__')
 

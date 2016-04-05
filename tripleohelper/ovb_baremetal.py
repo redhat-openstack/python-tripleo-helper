@@ -19,11 +19,11 @@ import concurrent.futures
 import json
 import logging
 
-import rdomhelper.baremetal
-from rdomhelper import ovb_bmc
-import rdomhelper.provisioners.openstack.provisioner as os_provisioner
-from rdomhelper.provisioners.openstack import utils as os_utils
-import rdomhelper.server as server
+import tripleohelper.baremetal
+from tripleohelper import ovb_bmc
+import tripleohelper.provisioners.openstack.provisioner as os_provisioner
+from tripleohelper.provisioners.openstack import utils as os_utils
+import tripleohelper.server as server
 
 LOG = logging.getLogger('__chainsaw__')
 
@@ -124,7 +124,7 @@ class Baremetal(server.Server):
         undercloud.run(command.format(node_ip=self.hostname), user='stack', success_status=(0, 255,))
 
 
-class BaremetalFactory(rdomhelper.baremetal.BaremetalFactory):
+class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
     def __init__(self, nova_api, neutron, keypair, key_filename, security_groups,
                  os_params={}):
         self.instackenv = []

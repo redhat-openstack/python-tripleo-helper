@@ -1,5 +1,5 @@
-Welcome to Python-RDO-M-Helper's documentation!
-===============================================
+Welcome to Python-TripleO-Helper's documentation!
+=================================================
 
 Contents:
 

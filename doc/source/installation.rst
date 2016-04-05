@@ -6,7 +6,7 @@ Installation
 Python versions
 ===============
 
-Python-RDO-M-Helper is tested under Python 3.4.
+Python-TripleO-Helper is tested under Python 3.4.
 
 Basic installation
 ==================
@@ -15,13 +15,13 @@ Basic installation
 
    $ virtualenv -p /usr/bin/python3 test
    $ source test/bin/activate
-   $ pip install git+https://github.com/redhat-cip/python-rdo-m-helper
+   $ pip install git+https://github.com/redhat-openstack/python-tripleo-helper
 
 
 OpenStack tenant configuration
 ==============================
 
-We strongly advise you to dedicate an OpenStack tenant to rdo-m-helper.
+We strongly advise you to dedicate an OpenStack tenant to tripleo-helper.
 You will need the following configuration:
 
 - a network called private with a subnet called private.

@@ -17,9 +17,9 @@
 import logging
 import sys
 
-import rdomhelper.provisioners.openstack.provisioner as os_provisioner
-from rdomhelper.provisioners.openstack import utils as os_utils
-from rdomhelper.server import Server
+import tripleohelper.provisioners.openstack.provisioner as os_provisioner
+from tripleohelper.provisioners.openstack import utils as os_utils
+from tripleohelper.server import Server
 
 LOG = logging.getLogger('__chainsaw__')
 

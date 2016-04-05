@@ -16,8 +16,8 @@
 
 import pytest
 
-import rdomhelper.tests.test_server
-import rdomhelper.undercloud
+import tripleohelper.tests.test_server
+import tripleohelper.undercloud
 
 files = {
     'overcloud-full': {
@@ -112,11 +112,11 @@ expectation_configure = [
     {'func': 'run', 'args': {'cmd': 'yum install -y --quiet bob'}},
     {'func': 'run', 'args': {'cmd': 'echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload'}}]
 
-expectation_configure += rdomhelper.tests.test_server.expectation_create_user
-expectation_configure += rdomhelper.tests.test_server.expectation_install_base_packages
-expectation_configure += rdomhelper.tests.test_server.expectation_clean_system
-expectation_configure += rdomhelper.tests.test_server.expectation_yum_update
-expectation_configure += rdomhelper.tests.test_server.expectation_install_osp
+expectation_configure += tripleohelper.tests.test_server.expectation_create_user
+expectation_configure += tripleohelper.tests.test_server.expectation_install_base_packages
+expectation_configure += tripleohelper.tests.test_server.expectation_clean_system
+expectation_configure += tripleohelper.tests.test_server.expectation_yum_update
+expectation_configure += tripleohelper.tests.test_server.expectation_install_osp
 expectation_configure += expectation_set_selinux
 expectation_configure += expectation_fix_hostname
 

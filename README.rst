@@ -24,12 +24,12 @@ At this point, you can deploy your OpenStack on:
 - baremetal nodes
 
 The documentation is available online here:
-[http://rdo-m-helper.readthedocs.org](http://rdo-m-helper.readthedocs.org)
+[http://python-tripleo-helper.readthedocs.org/en/latest/](http://python-tripleo-helper.readthedocs.org/en/latest/).
 
 Installation
 ------------
 
-[http://rdo-m-helper.readthedocs.org/en/latest/installation.html](http://rdo-m-helper.readthedocs.org/en/latest/installation.html)
+[http://python-tripleo-helper.readthedocs.org/en/latest/installation.html](installation).
 
 Commands
 --------
