@@ -1,7 +1,13 @@
 # -*- coding: utf-8 -*-
 
+import subprocess
 import sys
 import os
+
+
+cur_dir = os.path.abspath(os.path.dirname(__file__))
+output_path = os.path.join(cur_dir, 'api')
+subprocess.check_call(['sphinx-apidoc', '-e', '-o', output_path, '../../tripleohelper/', '../../tripleohelper/tests/', '../../tripleohelper/provisioners/openstack'])
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

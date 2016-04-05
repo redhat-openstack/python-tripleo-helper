@@ -1,10 +1,10 @@
-===
-API
-===
-
-
+=======
 Example
 =======
+
+
+Use of the library to deploy a TripleO
+======================================
 
 In this example, we use instack-virt-setup in a Nova virtual machine
 (nested KVM).
@@ -22,10 +22,10 @@ In this example, we use instack-virt-setup in a Nova virtual machine
     # Our hypervisor is ready, we can now create the undercloud VM
     undercloud = host0.instack_virt_setup()
     undercloud.enable_repositories(repositories)
- 
+
     # enable nosync to avoid sync() call and speed up the deployment
     undercloud.install_nosync()
- 
+
     undercloud.create_stack_user()
     undercloud.install_base_packages()
     undercloud.clean_system()
@@ -69,9 +69,10 @@ The repositories are described in this kind of structure:
 Use of the CLI to deploy a TripleO (OSP8)
 =========================================
 
-Deploy OSP8 is a RHEL7.2 on an existing OpenStack (a.k.a OpenStack Virtual Baremetal)::
+Deploy OSP8 is a RHEL7.2 on an existing OpenStack (a.k.a
+OpenStack Virtual Baremetal)::
 
-    chainsaw-ovb --config-file /home/goneri/rdomhelper_osp.conf
+    chainsaw-ovb --config-file tripleohelper_osp.conf
 
 .. code-block:: YAML
 
@@ -109,13 +110,3 @@ Deploy OSP8 is a RHEL7.2 on an existing OpenStack (a.k.a OpenStack Virtual Barem
               gpgcheck=0
               enabled=1
           dest: /etc/yum.repos.d/rhos-release-8-director.repo
-
-    host0:
-        # optional, the repository to enable on the hypervisor, if you use one
-        repositories: *DEFAULT_REPOSITORIES
-    undercloud:
-        # the repository to enable on the undercloud
-        repositories: *DEFAULT_REPOSITORIES
-        # the guest image to install on the undercloud
-        image_path: http://192.168.1.2/brewroot/packages/rhel-guest-image/7.2/20160302.0/images/rhel-guest-image-7.2-20160302.0.x86_64.qcow2
-        image_checksum: 5907366ad7abe80c63d2936b92dec704
