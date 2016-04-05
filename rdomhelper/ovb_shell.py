@@ -116,6 +116,82 @@ def initialize_network(neutron):
     response = neutron.add_interface_router(router['id'], {'subnet_id': subnet_id})
 
 
+def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
+    undercloud.install_rally()
+    for bm_node in baremetal_factory.nodes:
+        bm_node.refresh_status(undercloud)
+    chaos = rdomhelper.chaos_monkey.ChaosMonkey()
+    for node in baremetal_factory.nodes:
+        if node.flavor == 'control' and node._os_instance.status == 'ACTIVE':
+            chaos.add_node(node)
+    watchers = [
+        rdomhelper.watcher.Watcher(undercloud, 'nova list'),
+        rdomhelper.watcher.Watcher(undercloud, 'glance image-list'),
+        rdomhelper.watcher.Watcher(undercloud, 'neutron port-list'),
+        rdomhelper.watcher.Watcher(undercloud, 'neutron subnet-list'),
+        rdomhelper.watcher.Watcher(undercloud, 'rally (create-and-delete-stack_with_volume)', 'cd /home/stack/rally/samples/tasks/scenarios/heat && rally task start --task create-and-delete-stack_with_volume.json >> /tmp/rally_deployment_run.log 2>&1'),
+    ]
+    for w in watchers:
+        w.start()
+
+    # all controller will be, one by one, down 120s then up 120s
+    chaos.down_duration = 10
+    chaos.up_duration = 600
+    success = True
+    try:
+        chaos.start()
+        undercloud.add_annotation('start chaos monkey')
+
+        time.sleep(300)
+
+        undercloud.add_annotation('add new controller - 4')
+        undercloud.start_overcloud_deploy(
+            control_scale=4,
+            compute_scale=1,
+            control_flavor='control',
+            compute_flavor='compute',
+            environments=[
+                '/home/stack/network-environment.yaml',
+                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
+        undercloud.add_annotation('controller added')
+
+        time.sleep(300)
+
+        undercloud.add_annotation('add new controller - 5')
+        undercloud.start_overcloud_deploy(
+            control_scale=5,
+            compute_scale=1,
+            control_flavor='control',
+            compute_flavor='compute',
+            environments=[
+                '/home/stack/network-environment.yaml',
+                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
+        undercloud.add_annotation('controller added')
+
+        time.sleep(300)
+
+        undercloud.add_annotation('add new controller - 6')
+        undercloud.start_overcloud_deploy(
+            control_scale=5,
+            compute_scale=1,
+            control_flavor='control',
+            compute_flavor='compute',
+            environments=[
+                '/home/stack/network-environment.yaml',
+                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
+        undercloud.add_annotation('controller added')
+    except paramiko.ssh_exception.SSHException as e:
+        LOG.exception(e)
+        success = False
+    finally:
+        time.sleep(300)
+        chaos.stop = True
+        for w in watchers:
+            w.terminate()
+    LOG.info('success: %s' % success)
+    undercloud.add_annotation('final status: %s' % success)
+
+
 @click.command()
 @click.option('--os-auth-url', envvar='OS_AUTH_URL', required=True,
               help="Keystone auth url.")
@@ -129,7 +205,9 @@ def initialize_network(neutron):
               help="IP address of an undercloud to reuse.")
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
-def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, config_file):
+@click.option('--stress_test', required=False,
+              help="Name of the stress_test.")
+def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, config_file, stress_test):
     config = yaml.load(config_file)
     logger.setup_logging(config_file='/tmp/ovb.log')
     undercloud = None
@@ -262,79 +340,8 @@ undercloud_admin_vip = 192.0.2.201
                 '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
         undercloud.add_annotation('overcloud is ready')
 
-    undercloud.install_rally()
-    for bm_node in baremetal_factory.nodes:
-        bm_node.refresh_status(undercloud)
-    chaos = rdomhelper.chaos_monkey.ChaosMonkey()
-    for node in baremetal_factory.nodes:
-        if node.flavor == 'control' and node._os_instance.status == 'ACTIVE':
-            chaos.add_node(node)
-    watchers = [
-        rdomhelper.watcher.Watcher(undercloud, 'nova list'),
-        rdomhelper.watcher.Watcher(undercloud, 'glance image-list'),
-        rdomhelper.watcher.Watcher(undercloud, 'neutron port-list'),
-        rdomhelper.watcher.Watcher(undercloud, 'neutron subnet-list'),
-        rdomhelper.watcher.Watcher(undercloud, 'rally (create-and-delete-stack_with_volume)', 'cd /home/stack/rally/samples/tasks/scenarios/heat && rally task start --task create-and-delete-stack_with_volume.json >> /tmp/rally_deployment_run.log 2>&1'),
-    ]
-    for w in watchers:
-        w.start()
-
-    # all controller will be, one by one, down 120s then up 120s
-    chaos.down_duration = 1
-    chaos.up_duration = 600
-    success = True
-    try:
-        chaos.start()
-        undercloud.add_annotation('start chaos monkey')
-
-        time.sleep(300)
-
-        undercloud.add_annotation('add new controller - 4')
-        undercloud.start_overcloud_deploy(
-            control_scale=4,
-            compute_scale=1,
-            control_flavor='control',
-            compute_flavor='compute',
-            environments=[
-                '/home/stack/network-environment.yaml',
-                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
-        undercloud.add_annotation('controller added')
-
-        time.sleep(300)
-
-        undercloud.add_annotation('add new controller - 5')
-        undercloud.start_overcloud_deploy(
-            control_scale=5,
-            compute_scale=1,
-            control_flavor='control',
-            compute_flavor='compute',
-            environments=[
-                '/home/stack/network-environment.yaml',
-                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
-        undercloud.add_annotation('controller added')
-
-        time.sleep(300)
-
-        undercloud.add_annotation('add new controller - 6')
-        undercloud.start_overcloud_deploy(
-            control_scale=5,
-            compute_scale=1,
-            control_flavor='control',
-            compute_flavor='compute',
-            environments=[
-                '/home/stack/network-environment.yaml',
-                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
-        undercloud.add_annotation('controller added')
-    except paramiko.ssh_exception.SSHException as e:
-        LOG.exception(e)
-        success = False
-    finally:
-        time.sleep(300)
-        chaos.stop = True
-        for w in watchers:
-            w.terminate()
-    LOG.info('success: %s' % success)
-    undercloud.add_annotation('final status: %s' % success)
+    if stress_test == 'add_controllers_broken_network':
+        stress_add_controllers_with_broken_network(undercloud, baremetal_factory)
 
 # This is for setuptools entry point.
 main = cli
