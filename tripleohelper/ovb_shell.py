@@ -305,7 +305,7 @@ undercloud_admin_vip = 192.0.2.201
         # register the ironic UUID, this should be done directly in load_instackenv()
         baremetal_factory.set_ironic_uuid(undercloud.list_nodes())
 
-        # two first as compute
+        # the first as compute
         for node in baremetal_factory.nodes[:1]:
             undercloud.set_flavor(node, 'compute')
 

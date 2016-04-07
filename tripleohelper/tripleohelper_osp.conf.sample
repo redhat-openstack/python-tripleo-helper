@@ -21,9 +21,6 @@ provisioner:
 ssh:
     private_key: /home/dci/.ssh/DCI/id_rsa
 repositories: &DEFAULT_REPOSITORIES
-    - {type: rhsm_channel, name: rhel-7-server-rpms}
-    - {type: rhsm_channel, name: rhel-7-server-optional-rpms}
-    - {type: rhsm_channel, name: rhel-7-server-extras-rpms}
     - type: yum_repo
       content: |
           [RH7-RHOS-8.0]

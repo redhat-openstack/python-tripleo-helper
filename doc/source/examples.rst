@@ -20,25 +20,8 @@ In this example, we use instack-virt-setup in a Nova virtual machine
     host0.create_stack_user()
     host0.deploy_hypervisor()
     # Our hypervisor is ready, we can now create the undercloud VM
-    undercloud = host0.instack_virt_setup()
-    undercloud.enable_repositories(repositories)
-
-    # enable nosync to avoid sync() call and speed up the deployment
-    undercloud.install_nosync()
-
-    undercloud.create_stack_user()
-    undercloud.install_base_packages()
-    undercloud.clean_system()
-    undercloud.yum_update()
-
-    # install the OSP distribution
-    undercloud.install_osp()
-
-    # deploy the undercloud
-    undercloud.openstack_undercloud_install(
-        guest_image_path,
-        guest_image_checksum,
-        files)
+    undercloud = host0.build_undercloud_on_libvirt()
+    undercloud.configure(repositories)
 
     # and finally the overcloud
     undercloud.start_overcloud_deploy()
