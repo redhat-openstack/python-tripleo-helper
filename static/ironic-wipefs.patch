@@ -1,0 +1,11 @@
+--- ./usr/lib/python2.7/site-packages/ironic_python_agent/extensions/iscsi.py.orig	2016-04-08 11:00:10.129617544 -0400
++++ ./usr/lib/python2.7/site-packages/ironic_python_agent/extensions/iscsi.py	2016-04-08 11:01:17.134914720 -0400
+@@ -143,6 +143,8 @@
+             iqn = 'iqn.2008-10.org.openstack:%s' % uuidutils.generate_uuid()
+ 
+         device = hardware.dispatch_to_managers('get_os_install_device')
++        _execute('wipefs -a %s' % device)
++
+         LOG.debug("Starting ISCSI target with iqn %(iqn)s on device "
+                   "%(device)s", {'iqn': iqn, 'device': device})
+ 
