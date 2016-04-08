@@ -21,6 +21,7 @@ import yaml
 import logging
 import traceback
 
+import tripleohelper.baremetal
 import tripleohelper.host0
 from tripleohelper import logger
 from tripleohelper.provisioners.openstack import provisioner as os_provisioner
@@ -85,6 +86,8 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
 
         vm_undercloud.fetch_overcloud_images(config['overcloud'])
         vm_undercloud.overcloud_image_upload()
+        vm_undercloud.baremetal_factory = tripleohelper.baremetal.BaremetalFactory(
+            vm_undercloud.get_file_content('instackenv.json'))
         vm_undercloud.load_instackenv()
         vm_undercloud.create_flavor('baremetal')
         for uuid in vm_undercloud.list_nodes():

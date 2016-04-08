@@ -41,9 +41,9 @@ class Baremetal(server.Server):
         self._key_filename = key_filename
         self._security_groups = security_groups
         self.name = name
-        self.uuid = None
         self.flavor = None
         self.status = None
+        tripleohelper.baremetal.Baremetal.__init__(self)
 
     def deploy(self, image_name, ip, flavor='m1.small'):
         """Create the node.
@@ -180,15 +180,6 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
                     "pm_addr": pm_addr
                 })
 
-    def set_ironic_uuid(self, uuid_list):
-        """Map a list of Ironic UUID to BM nodes.
-        """
-        # TODO(Gonéri): ensure we adjust the correct node
-        i = iter(self.nodes)
-        for uuid in uuid_list:
-            node = next(i)
-            node.uuid = uuid
-
     def reload_environment(self, undercloud):
         servers = {}
         for s in self.nova_api.servers.list():
@@ -238,3 +229,21 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
             os_tenant_name=os_tenant_name,
             os_auth_url=os_auth_url)
         return bmc
+
+    def pxe_netboot(self, filename='boot.ipxe'):
+        """Configure the OVB underlying Neutron to do a network boot
+
+        :param filename: the name of the IPXE script to boot on. Default
+        is boot.ipxe.
+        """
+        for bm_node in self.nodes:
+            bm_node.pxe_netboot(filename)
+
+    def set_ironic_uuid(self, uuid_list):
+        """Map a list of Ironic UUID to BM nodes.
+        """
+        # TODO(Gonéri): ensure we adjust the correct node
+        i = iter(self.nodes)
+        for uuid in uuid_list:
+            node = next(i)
+            node.uuid = uuid

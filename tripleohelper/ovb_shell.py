@@ -117,13 +117,16 @@ def initialize_network(neutron):
 
 
 def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
-    undercloud.install_rally()
-    for bm_node in baremetal_factory.nodes:
-        bm_node.refresh_status(undercloud)
     chaos = tripleohelper.chaos_monkey.ChaosMonkey()
+    # all controller will be, one by one, down 120s then up 120s
+    chaos.down_duration = 10
+    chaos.up_duration = 600
+
     for node in baremetal_factory.nodes:
-        if node.flavor == 'control' and node._os_instance.status == 'ACTIVE':
+        if node.flavor == 'control':
             chaos.add_node(node)
+
+    undercloud.install_rally()
     watchers = [
         tripleohelper.watcher.Watcher(undercloud, 'nova list'),
         tripleohelper.watcher.Watcher(undercloud, 'glance image-list'),
@@ -134,9 +137,6 @@ def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
     for w in watchers:
         w.start()
 
-    # all controller will be, one by one, down 120s then up 120s
-    chaos.down_duration = 10
-    chaos.up_duration = 600
     success = True
     try:
         chaos.start()
@@ -172,7 +172,7 @@ def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
 
         undercloud.add_annotation('add new controller - 6')
         undercloud.start_overcloud_deploy(
-            control_scale=5,
+            control_scale=6,
             compute_scale=1,
             control_flavor='control',
             compute_flavor='compute',
@@ -235,7 +235,8 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
     else:
         purge_existing_ovb(nova_api, neutron)
         initialize_network(neutron)
-        undercloud = ovb_undercloud.OVBUndercloud(
+        undercloud = ovb_undercloud.OVBUndercloud()
+        undercloud.start(
             nova_api=nova_api,
             neutron=neutron,
             provisioner=config['provisioner'],
@@ -269,9 +270,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
         undercloud.add_annotation('Creating the Baremetal VMs')
         baremetal_factory.initialize(size=7)
         baremetal_factory.shutdown_nodes(undercloud)
-        undercloud.create_file(
-            'instackenv.json',
-            baremetal_factory.get_instackenv_json(), user='stack')
+    undercloud.baremetal_factory = baremetal_factory
     if undercloud.run('test -f stackrc', user='stack', ignore_error=True)[1] > 0:
         undercloud_conf = """
 [DEFAULT]
@@ -300,10 +299,7 @@ undercloud_admin_vip = 192.0.2.201
     if undercloud.run('test -f overcloudrc', user='stack', ignore_error=True)[1] > 0:
         undercloud.add_annotation('openstack image upload')
         undercloud.overcloud_image_upload()
-        undercloud.load_instackenv()
-
-        # register the ironic UUID, this should be done directly in load_instackenv()
-        baremetal_factory.set_ironic_uuid(undercloud.list_nodes())
+        undercloud.load_instackenv(baremetal_factory)
 
         # the first as compute
         for node in baremetal_factory.nodes[:1]:
@@ -314,15 +310,8 @@ undercloud_admin_vip = 192.0.2.201
             undercloud.set_flavor(node, 'control')
 
         undercloud.add_annotation('openstack overcloud inspector')
-        for bm_node in baremetal_factory.nodes:
-            bm_node.pxe_netboot(filename='inspector.ipxe')
-        undercloud.start_overcloud_inspector()
+        undercloud.start_overcloud_inspector(baremetal_factory)
 
-        # if ipxe is frozen, the VM will stay running.
-        # https://bugzilla.redhat.com/show_bug.cgi?id=1310778
-        baremetal_factory.shutdown_nodes(undercloud)
-        for bm_node in baremetal_factory.nodes:
-            bm_node.pxe_netboot(filename='boot.ipxe')
         undercloud.create_file(
             '/home/stack/network-environment.yaml',
             yaml.dump({'parameter_defaults': {'DnsServers': ['8.8.8.8', '8.8.4.4']}}),

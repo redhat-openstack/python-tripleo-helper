@@ -24,6 +24,7 @@ LOG = logging.getLogger('__chainsaw__')
 
 class Undercloud(Server):
     def __init__(self, **kwargs):
+        self.baremetal_factory = None
         Server.__init__(self, **kwargs)
 
     def configure(self, repositories):
@@ -103,6 +104,9 @@ class Undercloud(Server):
     def load_instackenv(self):
         """Load the instackenv.json file and wait till the ironic nodes are ready.
         """
+        self.create_file(
+            'instackenv.json',
+            self.baremetal_factory.get_instackenv_json(), user='stack')
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
         ironic_node_nbr = int(self.run('grep --count \'"cpu"\' instackenv.json', user='stack')[0])
@@ -199,6 +203,10 @@ class Undercloud(Server):
         self.run(command, user='stack')
 
     def start_overcloud_deploy(self, **kwargs):
+        # if ipxe is frozen, the VM will stay running.
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1310778
+        self.baremetal_factory.shutdown_nodes(self)
+
         self.add_environment_file(user='stack', filename='stackrc')
         o_o_deploy_command = self._prepare_o_o_deploy_command(**kwargs)
         self.run(o_o_deploy_command, user='stack')

@@ -30,7 +30,10 @@ class OVBUndercloud(Undercloud):
     This host is an undercloud deployed on a nova VM. The second NIC (eth1) will be included
     in to the br-ctlplane.
     """
-    def __init__(self, nova_api=None, neutron=None, provisioner=None, ip=None, flavor='m1.small', **kwargs):
+    def __init__(self, **kwargs):
+        Undercloud.__init__(self, hostname=None, **kwargs)
+
+    def start(self, nova_api=None, neutron=None, provisioner=None, ip=None, flavor='m1.small', **kwargs):
         body_value = {
             "port": {
                 "admin_state_up": True,
@@ -60,15 +63,13 @@ class OVBUndercloud(Undercloud):
             LOG.error("deployment has failed")
             sys.exit(1)
 
-        undercloud_ip = os_utils.add_a_floating_ip(nova_api, os_instance)
+        self.hostname = os_utils.add_a_floating_ip(nova_api, os_instance)
         os_utils.add_security_groups(os_instance,
                                      provisioner['security-groups'])
         os_provisioner.add_provision_security_group(nova_api)
         os_utils.add_security_groups(os_instance, ['provision'])
         LOG.info("add security groups '%s'" %
                  provisioner['security-groups'])
-
-        Undercloud.__init__(self, hostname=undercloud_ip, **kwargs)
 
         content = """
 DEVICE="eth1"
@@ -126,3 +127,21 @@ WantedBy=multi-user.target
         self.send_file('static/ironic-wipefs.patch', '/tmp/ironic-wipefs.patch')
         self.run('cd {tmpdir}; patch -p0 < /tmp/ironic-wipefs.patch'.format(tmpdir=tmpdir))
         self.run('cd {tmpdir}; find . | cpio --create --format=newc > /home/stack/ironic-python-agent.initramfs'.format(tmpdir=tmpdir))
+
+    def start_overcloud_inspector(self):
+        # ensure the overlying Neutron will request the nodes to boot
+        # on the inspector.ipxe file
+        self.baremetal_factory.pxe_netboot('inspector.ipxe')
+        Undercloud.start_overcloud_inspector(self)
+
+    def start_overcloud_deploy(self, baremetal_factory):
+        # ensure the overlying Neutron will request the nodes to boot
+        # on the boot.ipxe file
+        self.baremetal_factory.pxe_netboot('boot.ipxe')
+        Undercloud.start_overcloud_deploy(self)
+
+    def load_instackenv(self):
+        super(OVBUndercloud, self).load_instackenv()
+        # register association with the newly created ironic nodes and the
+        # existing barematal nodes in the factory
+        self.baremetal_factory.set_ironic_uuid(self.list_nodes())

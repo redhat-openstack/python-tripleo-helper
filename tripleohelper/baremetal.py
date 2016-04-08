@@ -19,9 +19,12 @@ import json
 
 
 class BaremetalFactory(object):
-    def __init__(self, instackenv_file):
-        with open(instackenv_file) as json_data:
-            self.instackenv = json.loads(json_data)
+    def __init__(self, instackenv_file=None, instackenv_content=None):
+        if instackenv_file:
+            with open(instackenv_file) as json_data:
+                self.instackenv = json.loads(json_data)
+        elif instackenv_content:
+            self.instackenv = json.loads(instackenv_content)
 
     def initialize(self, size=2):
         """Populate the node poll.
@@ -32,13 +35,17 @@ class BaremetalFactory(object):
 
     def get_instackenv_json(self):
         """Return the instackenv.json conent."""
-        return json.dumps(self.instackenv)
+        return json.dumps(self.instackenv, sort_keys=True)
 
     def shutdown_nodes(self, undercloud):
         undercloud.yum_install(['ipmitool'])
+        print(self.instackenv)
         for i in self.instackenv:
             undercloud.run(
-                ('ipmitool -I lanplus -H {ip} '
-                 '-U admin -P password chassis '
-                 'power off').format(ip=i['pm_addr']),
+                ('ipmitool -I lanplus -H {pm_addr} '
+                 '-U {pm_user} -P {pm_password} chassis '
+                 'power off').format(
+                     pm_addr=i['pm_addr'],
+                     pm_user=i['pm_user'],
+                     pm_password=i['pm_password']),
                 success_status=(0, 1))

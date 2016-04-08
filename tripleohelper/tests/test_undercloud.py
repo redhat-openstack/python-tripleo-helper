@@ -165,6 +165,7 @@ def test_overcloud_image_upload(undercloud):
 
 
 expectation_load_instackenv = [
+    {'func': 'create_file', 'args': {'path': 'instackenv.json', 'content': '[{"pm_addr": "neverland", "pm_password": "pw", "pm_user": "root"}]'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal import --json instackenv.json'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; grep --count \'"cpu"\' instackenv.json'}, 'res': ('4\n', 0)},
     {'func': 'run', 'args': {'cmd': '. stackrc; ironic node-list|grep -c "power off"'}, 'res': ('4\n', 0)},
@@ -178,6 +179,8 @@ def test_load_instackenv(undercloud):
 
 
 expectation_start_overcloud = [
+    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet ipmitool'}},
+    {'func': 'run', 'args': {'cmd': 'ipmitool -I lanplus -H neverland -U root -P pw chassis power off'}},
     {'func': 'run', 'args': {'cmd': (
         '. stackrc; openstack overcloud deploy '
         '--templates '

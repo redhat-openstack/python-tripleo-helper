@@ -1,10 +1,14 @@
 import copy
 
+import tripleohelper.baremetal
 import tripleohelper.host0
+import tripleohelper.ovb_baremetal
+import tripleohelper.ovb_undercloud
 import tripleohelper.server
 import tripleohelper.ssh
 import tripleohelper.undercloud
 
+import mock
 import pytest
 
 
@@ -101,6 +105,56 @@ def undercloud(fake_sshclient):
     ssh = FakeSshClient(None, None, None, None)
     s._ssh_pool.add_ssh_client('stack', ssh)
     s._ssh_pool.add_ssh_client('root', ssh)
+    s.baremetal_factory = tripleohelper.baremetal.BaremetalFactory(
+        instackenv_content='[{"pm_addr": "neverland", "pm_user": "root", "pm_password": "pw"}]')
+    return s
+
+
+@pytest.fixture
+def nova_api():
+    test_nova_api = mock.Mock()
+    test_nova_api.flavors.list.return_value = []
+    floating_ip = mock.Mock()
+    floating_ip.instance_id = None
+    floating_ip.fixed_ip = None
+    test_nova_api.floating_ips.list.return_value = [floating_ip]
+    test_nova_api.images.list.return_value = []
+    test_nova_api.keypairs.list.return_value = []
+    test_nova_api.networks.list.return_value = []
+    server = mock.Mock()
+    server.status = 'ACTIVE'
+    test_nova_api.servers.create.return_value = server
+    return test_nova_api
+
+
+@pytest.fixture
+def neutron():
+    test_neutron = mock.Mock()
+    test_neutron.create_port.return_value = {'port': {'id': 1}}
+    return test_neutron
+
+
+@pytest.fixture
+def ovb_undercloud(fake_sshclient, nova_api, neutron):
+    s = tripleohelper.ovb_undercloud.OVBUndercloud()
+    s._root_user_enabled = True
+    ssh = FakeSshClient(None, None, None, None)
+    s._ssh_pool.add_ssh_client('stack', ssh)
+    s._ssh_pool.add_ssh_client('root', ssh)
+    s.start(
+        nova_api=nova_api,
+        neutron=neutron,
+        provisioner={
+            'image': {'name': 'RHEL7'},
+            'keypair': 'someone',
+            'network': 'skynet',
+            'security-groups': ['ssh']})
+    s.baremetal_factory = tripleohelper.ovb_baremetal.BaremetalFactory(
+        nova_api=nova_api,
+        neutron=neutron,
+        keypair='someone',
+        key_filename='somewhere',
+        security_groups=['ssh'])
     return s
 
 

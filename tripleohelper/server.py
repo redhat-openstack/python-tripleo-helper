@@ -127,6 +127,9 @@ class Server(object):
             success_status=success_status, error_callback=error_callback,
             custom_log=custom_log, retry=retry)
 
+    def get_file_content(self, filename):
+        return self.run('cat %s' % filename)[1]
+
     def yum_install(self, packages, ignore_error=False):
         """Install some packages on the remote host.
 
