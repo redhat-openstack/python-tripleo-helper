@@ -311,7 +311,7 @@ undercloud_admin_vip = 192.0.2.201
             undercloud.set_flavor(node, 'control')
 
         undercloud.add_annotation('openstack overcloud inspector')
-        undercloud.start_overcloud_inspector(baremetal_factory)
+        undercloud.start_overcloud_inspector()
 
         undercloud.create_file(
             '/home/stack/network-environment.yaml',
