@@ -235,12 +235,13 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
     else:
         purge_existing_ovb(nova_api, neutron)
         initialize_network(neutron)
-        undercloud = ovb_undercloud.OVBUndercloud()
+        undercloud = ovb_undercloud.OVBUndercloud(
+            key_filename=config['ssh']['private_key']
+        )
         undercloud.start(
             nova_api=nova_api,
             neutron=neutron,
             provisioner=config['provisioner'],
-            key_filename=config['ssh']['private_key'],
             ip='192.0.2.240',
             flavor='m1.large')
 
