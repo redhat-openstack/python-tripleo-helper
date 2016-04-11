@@ -1,5 +1,5 @@
 [gerrit]
 host=softwarefactory-project.io
 port=29418
-project=python-rdo-m-helper
+project=python-tripleo-helper
 defaultbranch=master
