@@ -300,7 +300,7 @@ undercloud_admin_vip = 192.0.2.201
     if undercloud.run('test -f overcloudrc', user='stack', ignore_error=True)[1] > 0:
         undercloud.add_annotation('openstack image upload')
         undercloud.overcloud_image_upload()
-        undercloud.load_instackenv(baremetal_factory)
+        undercloud.load_instackenv()
 
         # the first as compute
         for node in baremetal_factory.nodes[:1]:
