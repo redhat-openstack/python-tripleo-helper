@@ -288,8 +288,8 @@ class Server(object):
         We use hardcoded RPM URL because we don't want to enable EPEL repository.
         """
         epel_mirror = 'https://dl.fedoraproject.org/pub/epel/7/x86_64/'
-        self.run('cd /tmp; curl -O %s/c/collectd-5.5.1-2.el7.x86_64.rpm' % epel_mirror, user='stack')
-        self.run('cd /tmp; curl -O %s/c/collectd-ping-5.5.1-2.el7.x86_64.rpm' % epel_mirror, user='stack')
+        self.run('cd /tmp; curl -O %s/c/collectd-5.5.1-3.el7.x86_64.rpm' % epel_mirror, user='stack')
+        self.run('cd /tmp; curl -O %s/c/collectd-ping-5.5.1-3.el7.x86_64.rpm' % epel_mirror, user='stack')
         self.run('cd /tmp; curl -O %s/l/liboping-1.6.2-2.el7.x86_64.rpm' % epel_mirror, user='stack')
         self.run('yumdownloader --destdir=/tmp libtool-ltdl yajl')
 
