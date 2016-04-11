@@ -43,7 +43,7 @@ class Baremetal(server.Server):
         self.name = name
         self.flavor = None
         self.status = None
-        tripleohelper.baremetal.Baremetal.__init__(self)
+        super(Baremetal, self).__init__(hostname=None)
 
     def deploy(self, image_name, ip, flavor='m1.small'):
         """Create the node.
