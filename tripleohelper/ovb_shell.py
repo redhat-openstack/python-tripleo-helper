@@ -69,22 +69,29 @@ def purge_existing_ovb(nova_api, neutron):
     except IndexError:  # already doesnt exist
         pass
 
-    for port in neutron.list_ports()['ports']:
-        if port['name'].endswith('_provision'):
-            neutron.delete_port(port['id'])
-    for net in neutron.list_networks().get('networks'):
-        if not net['name'].startswith('provision_'):
-            continue
-        for port in neutron.list_ports(network_id=net['id'])['ports']:
-            if port.get('device_owner') == 'network:router_interface':
-                continue
-            try:
-                neutron.delete_port(port['id'])
-            except neutronclient.common.exceptions.PortNotFoundClient:
-                    pass
-            for subnet in neutron.list_subnets(network_id=net['id'])['subnets']:
-                neutron.delete_subnet(subnet['id'])
-        neutron.delete_network(net['id'])
+    for _ in range(0, 5):
+        try:
+            for port in neutron.list_ports()['ports']:
+                if port['name'].endswith('_provision'):
+                    neutron.delete_port(port['id'])
+            for net in neutron.list_networks().get('networks'):
+                if not net['name'].startswith('provision_'):
+                    continue
+                for port in neutron.list_ports(network_id=net['id'])['ports']:
+                    if port.get('device_owner') == 'network:router_interface':
+                        continue
+                    try:
+                        neutron.delete_port(port['id'])
+                    except neutronclient.common.exceptions.PortNotFoundClient:
+                            pass
+                    for subnet in neutron.list_subnets(network_id=net['id'])['subnets']:
+                        neutron.delete_subnet(subnet['id'])
+                neutron.delete_network(net['id'])
+        except neutronclient.common.exceptions.Conflict:
+            LOG.debug('waiting for all the ports to be freed...')
+            time.sleep(5)
+        else:
+            return
 
 
 def initialize_network(neutron):
