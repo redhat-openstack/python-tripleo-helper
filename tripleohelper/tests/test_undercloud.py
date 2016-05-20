@@ -167,7 +167,7 @@ def test_overcloud_image_upload(undercloud):
 expectation_load_instackenv = [
     {'func': 'create_file', 'args': {'path': 'instackenv.json', 'content': '[{"pm_addr": "neverland", "pm_password": "pw", "pm_user": "root"}]'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal import --json instackenv.json'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; grep --count \'"cpu"\' instackenv.json'}, 'res': ('4\n', 0)},
+    {'func': 'run', 'args': {'cmd': '. stackrc; cat /home/stack/instackenv.json |jq -M ".|length"'}, 'res': ('4\n', 0)},
     {'func': 'run', 'args': {'cmd': '. stackrc; ironic node-list|grep -c "power off"'}, 'res': ('4\n', 0)},
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal configure boot'}},
 ]

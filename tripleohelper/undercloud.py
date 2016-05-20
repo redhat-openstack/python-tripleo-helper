@@ -109,7 +109,7 @@ class Undercloud(Server):
             self.baremetal_factory.get_instackenv_json(), user='stack')
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
-        ironic_node_nbr = int(self.run('grep --count \'"cpu"\' instackenv.json', user='stack')[0])
+        ironic_node_nbr = int(self.run('cat /home/stack/instackenv.json |jq -M ".|length"', user='stack')[0])
         self._wait_for_ironic_nodes(ironic_node_nbr)
         self.run('openstack baremetal configure boot', user='stack')
 
