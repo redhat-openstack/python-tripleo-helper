@@ -34,7 +34,7 @@ class Watcher(multiprocessing.Process):
 
     def run(self):
         # we are in a new process, we should start a new SSH client
-        self.undercloud.enable_root_user('stack')
+        self.undercloud.enable_user('stack')
         self.undercloud.add_environment_file(user='stack', filename='overcloudrc')
         while not self.stop:
             if self.undercloud.run(self.command, ignore_error=True, user='stack')[1] != 0:

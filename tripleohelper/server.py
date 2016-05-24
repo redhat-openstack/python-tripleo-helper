@@ -45,7 +45,6 @@ class Server(object):
         self.via_ip = via_ip
         self._ssh_pool = ssh.PoolSshClient()
         self._redirect_to_host = redirect_to_host
-        self._root_user_enabled = False
         self.rhsm_active = False
         self.rhsm_channels = [
             'rhel-7-server-rpms',
@@ -53,7 +52,7 @@ class Server(object):
             'rhel-7-server-extras-rpms']
         self.nosync_rpm = 'https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'
 
-    def enable_root_user(self, user):
+    def enable_user(self, user):
         """Enable the root account on the remote host.
 
 
@@ -62,17 +61,21 @@ class Server(object):
         account is enable, if this is not the case, it will try to get the name
         of admin user and use it to re-enable the root account.
         """
-        _root_ssh_client = ssh.SshClient(
-            hostname=self.hostname,
-            user='root',
-            key_filename=self._key_filename,
-            via_ip=self.via_ip)
+        if user in self._ssh_pool._ssh_clients:
+            return
 
         if user == 'root':
+            _root_ssh_client = ssh.SshClient(
+                hostname=self.hostname,
+                user='root',
+                key_filename=self._key_filename,
+                via_ip=self.via_ip)
+
             # connect as a root user
             _root_ssh_client.start()
             result, _ = _root_ssh_client.run('uname -a')
 
+            image_user = None
             # check if root is not allowed
             if 'Please login as the user "cloud-user"' in result:
                 image_user = 'cloud-user'
@@ -80,48 +83,39 @@ class Server(object):
             elif 'Please login as the user "fedora" rather than the user "root"' in result:
                 image_user = 'fedora'
                 _root_ssh_client.stop()
-            else:
-                self._ssh_pool.add_ssh_client('root', _root_ssh_client)
-                return
-        else:
-            image_user = user
 
-        LOG.info('enabling the root user')
+            if image_user:
+                self.enable_user(image_user)
+                LOG.info('enabling the root user')
+                _cmd = "sudo sed -i 's,.*ssh-rsa,ssh-rsa,' /root/.ssh/authorized_keys"
+                self._ssh_pool.run(image_user, _cmd)
+            self._ssh_pool.add_ssh_client('root', _root_ssh_client)
+            return
+
         # add the cloud user to the ssh pool
         self._ssh_pool.build_ssh_client(
             hostname=self.hostname,
-            user=image_user,
+            user=user,
             key_filename=self._key_filename,
             via_ip=self.via_ip)
-        # enable the root user
-        _cmd = "sudo sed -i 's,.*ssh-rsa,ssh-rsa,' /root/.ssh/authorized_keys"
-        self._ssh_pool.run(image_user, _cmd)
-
-        # add the root user to the ssh pool
-        _root_ssh_client.start()
-        self._ssh_pool.add_ssh_client('root', _root_ssh_client)
-        self._root_user_enabled = True
 
     def send_file(self, local_path, remote_path, user='root', unix_mode=None):
         """Upload a local file on the remote host.
         """
-        if not self._root_user_enabled:
-            self.enable_root_user(user)
+        self.enable_user(user)
         return self._ssh_pool.send_file(user, local_path, remote_path, unix_mode=unix_mode)
 
     def create_file(self, path, content, mode='w', user='root'):
         """Create a file on the remote host.
         """
-        if not self._root_user_enabled:
-            self.enable_root_user(user)
+        self.enable_user(user)
         return self._ssh_pool.create_file(user, path, content, mode)
 
     def run(self, cmd, user='root', sudo=False, ignore_error=False,
             success_status=(0,), error_callback=None, custom_log=None, retry=0):
         """Run a command on the remote host.
         """
-        if not self._root_user_enabled:
-            self.enable_root_user(user)
+        self.enable_user(user)
         return self._ssh_pool.run(
             user, cmd, sudo=sudo, ignore_error=ignore_error,
             success_status=success_status, error_callback=error_callback,

@@ -111,28 +111,28 @@ def test_install_osp(server):
     server.install_osp()
 
 
-expectation_enable_root_user_needed_rhel = [
+expectation_enable_user_needed_rhel = [
     # First case, we need to adjust root's authorized_keys file
     {'func': 'run', 'args': {'cmd': 'uname -a'}, 'res': ('Please login as the user "cloud-user"', 0)},
     {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}}
 ]
-expectation_enable_root_user_needed_fedora = [
+expectation_enable_user_needed_fedora = [
     # First case, we need to adjust root's authorized_keys file
     {'func': 'run', 'args': {'cmd': 'uname -a'}, 'res': ('Please login as the user "fedora" rather than the user "root"', 0)},
     {'func': 'run', 'args': {'cmd': 'sudo sed -i \'s,.*ssh-rsa,ssh-rsa,\' /root/.ssh/authorized_keys'}}
 ]
-expectation_enable_root_user_useless = [
+expectation_enable_user_useless = [
     # second case, we can directly call uname, the root use is enabled
     {'func': 'run', 'args': {'cmd': 'uname -a'}, 'res': ('Linux demo 4.3.4-300.fc23.x86_64+debug #1 SMP Mon Jan 25 13:22:34 UTC 2016 x86_64 x86_64 x86_64 GNU/Linux', 0)},
 ]
 
 
 @pytest.mark.parametrize('fake_sshclient', [
-    expectation_enable_root_user_needed_rhel,
-    expectation_enable_root_user_needed_fedora,
-    expectation_enable_root_user_useless], indirect=['fake_sshclient'])
-def test_enable_root_user(server_without_root_enabled):
-    server_without_root_enabled.enable_root_user('root')
+    expectation_enable_user_needed_rhel,
+    expectation_enable_user_needed_fedora,
+    expectation_enable_user_useless], indirect=['fake_sshclient'])
+def test_enable_user(server_without_root_enabled):
+    server_without_root_enabled.enable_user('root')
 
 expectation_fetch_image = [
     {'func': 'create_file', 'args': {'path': 'somewhere.md5', 'content': 'this_is_a_Bad_md5 somewhere\n'}},
