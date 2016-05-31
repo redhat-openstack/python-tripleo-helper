@@ -20,7 +20,7 @@ import os
 
 from tripleohelper import ssh
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 class Server(object):

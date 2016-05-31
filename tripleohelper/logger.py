@@ -19,7 +19,7 @@ import sys
 
 
 def setup_logging(extra_handlers=(), config_file='chainsaw.log'):
-    logger = logging.getLogger('__chainsaw__')
+    logger = logging.getLogger('tripleohelper')
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter(
         "%(asctime)s::%(levelname)s::%(message)s")

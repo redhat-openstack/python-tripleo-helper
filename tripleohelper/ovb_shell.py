@@ -33,7 +33,7 @@ import tripleohelper.watcher
 import neutronclient.common.exceptions
 import neutronclient.v2_0.client
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 def purge_existing_ovb(nova_api, neutron):

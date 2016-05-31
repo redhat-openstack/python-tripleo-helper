@@ -23,7 +23,7 @@ import novaclient.exceptions
 import tripleohelper.host0
 from tripleohelper.provisioners.openstack import utils
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 def build_openstack_instance(nova_api, name, image, flavor, key_name, nics):

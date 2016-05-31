@@ -19,7 +19,7 @@ import logging
 import threading
 import time
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 class ChaosMonkey(threading.Thread):

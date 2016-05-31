@@ -25,7 +25,7 @@ import tripleohelper.provisioners.openstack.provisioner as os_provisioner
 from tripleohelper.provisioners.openstack import utils as os_utils
 import tripleohelper.server as server
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 class Baremetal(server.Server):

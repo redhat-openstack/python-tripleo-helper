@@ -18,7 +18,7 @@ from novaclient import client as nova_client
 
 import logging
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 def _get_id_by_attr(resources, attr, value):

@@ -19,7 +19,7 @@ import time
 
 from tripleohelper.server import Server
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 class Undercloud(Server):

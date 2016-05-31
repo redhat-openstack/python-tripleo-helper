@@ -22,7 +22,7 @@ import logging
 import select
 import time
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 class SshClient(object):

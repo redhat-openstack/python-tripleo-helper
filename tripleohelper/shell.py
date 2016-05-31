@@ -28,7 +28,7 @@ from tripleohelper.provisioners.openstack import provisioner as os_provisioner
 from tripleohelper import undercloud
 
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 @click.command()

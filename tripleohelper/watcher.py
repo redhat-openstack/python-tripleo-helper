@@ -19,7 +19,7 @@ import logging
 import multiprocessing
 import time
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 class Watcher(multiprocessing.Process):

@@ -21,7 +21,7 @@ import tripleohelper.provisioners.openstack.provisioner as os_provisioner
 from tripleohelper.provisioners.openstack import utils as os_utils
 from tripleohelper.undercloud import Undercloud
 
-LOG = logging.getLogger('__chainsaw__')
+LOG = logging.getLogger('tripleohelper')
 
 
 class OVBUndercloud(Undercloud):
