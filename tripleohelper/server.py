@@ -105,6 +105,10 @@ class Server(object):
         self.enable_user(user)
         return self._ssh_pool.send_file(user, local_path, remote_path, unix_mode=unix_mode)
 
+    def open(self, filename, mode='r', user='root'):
+        self.enable_user(user)
+        return self._ssh_pool.open(user, filename, mode)
+
     def create_file(self, path, content, mode='w', user='root'):
         """Create a file on the remote host.
         """

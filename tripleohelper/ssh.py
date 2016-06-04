@@ -252,6 +252,11 @@ class SshClient(object):
         if unix_mode:
             sftp.chmod(remote_path, unix_mode)
 
+    def open(self, filename, mode='r'):
+        self._check_started()
+        sftp = paramiko.SFTPClient.from_transport(self._transport)
+        return sftp.open(filename, mode)
+
     def create_file(self, path, content, mode='w'):
         """Create a file with a content.
         :param path: the path of the file.
@@ -322,6 +327,10 @@ class PoolSshClient(object):
     def send_file(self, user, local_path, remote_path, unix_mode=None):
         self._check_ssh_client(user)
         return self._ssh_clients[user].send_file(local_path, remote_path, unix_mode)
+
+    def open(self, user, filename, mode='r'):
+        self._check_ssh_client(user)
+        return self._ssh_clients[user].open(filename, mode)
 
     def create_file(self, user, path, content, mode='w'):
         self._check_ssh_client(user)
