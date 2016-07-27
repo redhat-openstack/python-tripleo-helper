@@ -20,6 +20,7 @@ from paramiko import ssh_exception
 import io
 import logging
 import select
+import socket
 import time
 
 LOG = logging.getLogger('tripleohelper')
@@ -204,7 +205,7 @@ class SshClient(object):
                 exit_status, cmd_output, ignore_error=ignore_error,
                 success_status=success_status, error_callback=error_callback,
                 custom_log=custom_log)
-        except paramiko.ssh_exception.SSHException as e:
+        except (paramiko.ssh_exception.SSHException, socket.error) as e:
             if not retry:
                 raise e
             else:
