@@ -85,7 +85,7 @@ MTU=1400
         self.run('ifup eth1')
         LOG.info("undercloud is ready")
 
-    def enable_neutron_hack(self, os_username, os_password, os_tenant_name, os_auth_url):
+    def enable_neutron_hack(self, os_username, os_password, os_project_id, os_auth_url):
         """Enable the neutron hack on the undercloud.
 
         This script will watch the undercloud and copy any relevant network
@@ -98,7 +98,7 @@ MTU=1400
 [Unit]
 Description=OVB neutron hack Service
 [Service]
-ExecStart=/usr/local/bin/ovb_fix_neutron_addr  --os-user {os_username} --os-password {os_password} --os-tenant {os_tenant_name} --os-auth-url {os_auth_url}
+ExecStart=/usr/local/bin/ovb_fix_neutron_addr  --os-user {os_username} --os-password {os_password} --os-project-id {os_project_id} --os-auth-url {os_auth_url}
 User=root
 StandardOutput=kmsg+console
 StandardError=inherit
@@ -112,7 +112,7 @@ WantedBy=multi-user.target
             content.format(
                 os_username=os_username,
                 os_password=os_password,
-                os_tenant_name=os_tenant_name,
+                os_project_id=os_project_id,
                 os_auth_url=os_auth_url))
         self.run('systemctl enable %s' % unit)
         self.run('systemctl start %s' % unit)

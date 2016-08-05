@@ -3,6 +3,8 @@
 
 import argparse
 import copy
+from keystoneauth1 import loading as ks_loading
+import keystoneauth1.session
 import os
 import neutronclient.v2_0.client
 import subprocess
@@ -73,8 +75,8 @@ if __name__ == '__main__':
                         dest='password',
                         required=True,
                         help='The password for connecting to OpenStack')
-    parser.add_argument('--os-tenant',
-                        dest='tenant',
+    parser.add_argument('--os-project-id',
+                        dest='project_id',
                         required=True,
                         help='The tenant for connecting to OpenStack')
     parser.add_argument('--os-auth-url',
@@ -97,11 +99,16 @@ if __name__ == '__main__':
         else:
             break
         time.sleep(60)
-    neutron_down_below = neutronclient.v2_0.client.Client(
-        username=args.user,
-        password=args.password,
-        tenant_name=args.tenant,
-        auth_url=args.auth_url)
+
+    loader = ks_loading.get_plugin_loader('password')
+    auth = loader.load_from_options(auth_url=args.auth_url,
+                                    username=args.user,
+                                    password=args.password,
+                                    project_id=args.project_id)
+    sess = keystoneauth1.session.Session(auth=auth)
+    neutron_down_below =  neutronclient.v2_0.client.Client(
+        endpoint_url=sess.get_endpoint(service_type='network'),
+        token=sess.get_token())
 
     while True:
         vip_addresses = list_vip_addresses(undercloud_neutron)

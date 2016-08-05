@@ -14,11 +14,24 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from keystoneauth1 import loading as ks_loading
+import keystoneauth1.session
+import neutronclient.v2_0
 from novaclient import client as nova_client
 
 import logging
 
 LOG = logging.getLogger('tripleohelper')
+
+
+def ks_session(auth_url, username, password, project_id):
+    loader = ks_loading.get_plugin_loader('password')
+    auth = loader.load_from_options(auth_url=auth_url,
+                                    username=username,
+                                    password=password,
+                                    project_id=project_id)
+    sess = keystoneauth1.session.Session(auth=auth)
+    return sess
 
 
 def _get_id_by_attr(resources, attr, value):
@@ -28,13 +41,14 @@ def _get_id_by_attr(resources, attr, value):
     return None
 
 
-def build_nova_api(auth_url, username, password, tenant):
-    return nova_client.Client(
-        2,
-        auth_url=auth_url,
-        username=username,
-        api_key=password,
-        project_id=tenant)
+def build_nova_api(sess):
+    return nova_client.Client(2, session=sess)
+
+
+def build_neutron_client(sess):
+    return neutronclient.v2_0.client.Client(
+        endpoint_url=sess.get_endpoint(service_type='network'),
+        token=sess.get_token())
 
 
 def get_image_id(nova_api, image_name):

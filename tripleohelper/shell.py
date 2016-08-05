@@ -38,15 +38,15 @@ LOG = logging.getLogger('tripleohelper')
               help="Openstack username account.")
 @click.option('--os-password', envvar='OS_PASSWORD', required=True,
               help="Openstack password account.")
-@click.option('--os-tenant-name', envvar='OS_TENANT_NAME', required=True,
-              help="Openstack tenant name.")
+@click.option('--os-project-id', envvar='OS_TENANT_ID', required=True,
+              help="Openstack project ID.")
 @click.option('--host0-ip', required=False,
               help="IP address of a host0 to reuse.")
 @click.option('--undercloud-ip', required=False,
               help="IP address of an undercloud to reuse.")
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
-def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercloud_ip, config_file):
+def cli(os_auth_url, os_username, os_password, os_project_id, host0_ip, undercloud_ip, config_file):
     config = yaml.load(config_file)
     ssh = config['ssh']
     host0 = None
@@ -61,7 +61,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, host0_ip, undercl
                                               key_filename=ssh['private_key'])
         else:
             host0 = os_provisioner.deploy_host0(os_auth_url, os_username,
-                                                os_password, os_tenant_name,
+                                                os_password, os_project_id,
                                                 config['provisioner'],
                                                 config['ssh']['private_key'])
         host0.configure(rhsm=rhsm,

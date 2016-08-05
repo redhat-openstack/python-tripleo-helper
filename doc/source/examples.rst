@@ -13,7 +13,7 @@ In this example, we use instack-virt-setup in a Nova virtual machine
 
     host0 = deploy_host0(
         os_auth_url, os_username, os_password,
-        os_tenant_name, config)
+        os_project_id, config)
     host0.enable_repositories(
         repositories)
     host0.install_nosync()

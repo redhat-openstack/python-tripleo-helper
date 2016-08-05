@@ -40,7 +40,7 @@ class OvbBmc(Server):
             nova_api=None, neutron=None, keypair=None,
             key_filename=None, security_groups=[], image_name=None, ip=None,
             flavor='m1.small', os_username=None,
-            os_password=None, os_tenant_name=None, os_auth_url=None, **kwargs):
+            os_password=None, os_project_id=None, os_auth_url=None, **kwargs):
 
         assert key_filename
         self.nova_api = nova_api
@@ -48,7 +48,7 @@ class OvbBmc(Server):
         self._keypair = keypair
         self.os_username = os_username
         self.os_password = os_password
-        self.os_tenant_name = os_tenant_name
+        self.os_project_id = os_project_id
         self.os_auth_url = os_auth_url
         self._nic_cpt = 0
         self._bmc_range_start = 100
@@ -103,7 +103,8 @@ class OvbBmc(Server):
         os_utils.get_network_id(self.nova_api, 'provision_bob')
 
         self.send_file('static/openstackbmc', '/usr/local/bin/openstackbmc', unix_mode=0o755)
-        self.yum_install(['python-novaclient', 'python-neutronclient', 'python-pip', 'python-crypto'])
+        self.yum_install(['https://www.rdoproject.org/repos/rdo-release.rpm'])
+        self.yum_install(['python-novaclient', 'python-neutronclient', 'python-keystoneclient', 'python-pip', 'python2-oslo-utils', 'python-crypto'])
         self.run('pip install pyghmi')
 
     def attach_subnet_to_router(self, subnet_id):
@@ -161,7 +162,7 @@ ONBOOT=yes
 [Unit]
 Description=openstack-bmc {bm_instance} Service
 [Service]
-ExecStart=/usr/local/bin/openstackbmc  --os-user {os_username} --os-password {os_password} --os-tenant {os_tenant_name} --os-auth-url {os_auth_url} --instance {bm_instance} --address {bmc_ip}
+ExecStart=/usr/local/bin/openstackbmc  --os-user {os_username} --os-password {os_password} --os-project-id {os_project_id} --os-auth-url {os_auth_url} --instance {bm_instance} --address {bmc_ip}
 User=root
 StandardOutput=kmsg+console
 StandardError=inherit
@@ -175,7 +176,7 @@ WantedBy=multi-user.target
             content.format(
                 os_username=self.os_username,
                 os_password=self.os_password,
-                os_tenant_name=self.os_tenant_name,
+                os_project_id=self.os_project_id,
                 os_auth_url=self.os_auth_url,
                 bm_instance=bm_instance,
                 bmc_ip=bmc_ip))

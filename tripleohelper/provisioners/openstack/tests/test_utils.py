@@ -58,12 +58,9 @@ def test_get_network_id(nova_api):
 
 @mock.patch('novaclient.client.Client', spec=nova_client.Client)
 def test_build_nova_api(mock_nova_client):
-    utils.build_nova_api('http://auth_url', 'username', 'password', 'tenant')
-    mock_nova_client.assert_called_with(2,
-                                        auth_url='http://auth_url',
-                                        username='username',
-                                        api_key='password',
-                                        project_id='tenant')
+    sess = utils.ks_session('http://auth_url', 'username', 'password', 'tenant')
+    utils.build_nova_api(sess)
+    mock_nova_client.assert_called_with(2, session=sess)
 
 
 def test_get_a_floating_ip(nova_api):

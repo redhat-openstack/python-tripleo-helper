@@ -210,7 +210,7 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
             for node in self.nodes:
                 node.flavor = next(i)
 
-    def create_bmc(self, os_username, os_password, os_tenant_name, os_auth_url):
+    def create_bmc(self, os_username, os_password, os_project_id, os_auth_url):
         """Deploy the BMC machine.
 
         This machine hosts the ipmi servers, each ipmi server is associated to a baremetal
@@ -226,7 +226,7 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
             ip='192.0.2.254',
             os_username=os_username,
             os_password=os_password,
-            os_tenant_name=os_tenant_name,
+            os_project_id=os_project_id,
             os_auth_url=os_auth_url)
         return bmc
 

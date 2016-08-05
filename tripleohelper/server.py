@@ -89,6 +89,7 @@ class Server(object):
                 LOG.info('enabling the root user')
                 _cmd = "sudo sed -i 's,.*ssh-rsa,ssh-rsa,' /root/.ssh/authorized_keys"
                 self._ssh_pool.run(image_user, _cmd)
+                _root_ssh_client.start()
             self._ssh_pool.add_ssh_client('root', _root_ssh_client)
             return
 

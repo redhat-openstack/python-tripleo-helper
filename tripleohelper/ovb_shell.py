@@ -206,26 +206,23 @@ def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
               help="Openstack username account.")
 @click.option('--os-password', envvar='OS_PASSWORD', required=True,
               help="Openstack password account.")
-@click.option('--os-tenant-name', envvar='OS_TENANT_NAME', required=True,
-              help="Openstack tenant name.")
+@click.option('--os-project-id', envvar='OS_TENANT_ID', required=True,
+              help="Openstack project ID.")
 @click.option('--undercloud-ip', required=False,
               help="IP address of an undercloud to reuse.")
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
 @click.option('--stress_test', required=False,
               help="Name of the stress_test.")
-def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, config_file, stress_test):
+def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, config_file, stress_test):
     config = yaml.load(config_file)
     logger.setup_logging(config_file='/tmp/ovb.log')
     undercloud = None
     baremetal_factory = None
 
-    neutron = neutronclient.v2_0.client.Client(username=os_username,
-                                               password=os_password,
-                                               tenant_name=os_tenant_name,
-                                               auth_url=os_auth_url)
-    nova_api = os_utils.build_nova_api(os_auth_url, os_username,
-                                       os_password, os_tenant_name)
+    sess = os_utils.ks_session(os_auth_url, os_username, os_password, os_project_id)
+    neutron = os_utils.build_neutron_client(sess)
+    nova_api = os_utils.build_nova_api(sess)
 
     if undercloud_ip:
         undercloud = tripleohelper.undercloud.Undercloud(
@@ -273,7 +270,7 @@ def cli(os_auth_url, os_username, os_password, os_tenant_name, undercloud_ip, co
             security_groups=config['provisioner']['security-groups'],
             os_params={'os_username': os_username,
                        'os_password': os_password,
-                       'os_tenant_name': os_tenant_name,
+                       'os_project_id': os_project_id,
                        'os_auth_url': os_auth_url})
         undercloud.add_annotation('Creating the Baremetal VMs')
         baremetal_factory.initialize(size=7)
@@ -302,7 +299,7 @@ undercloud_admin_vip = 192.0.2.201
         undercloud.openstack_undercloud_install(
             config['undercloud']['image_path'],
             config['undercloud']['image_checksum'])
-        undercloud.enable_neutron_hack(os_username, os_password, os_tenant_name, os_auth_url)
+        undercloud.enable_neutron_hack(os_username, os_password, os_project_id, os_auth_url)
 
     if undercloud.run('test -f overcloudrc', user='stack', ignore_error=True)[1] > 0:
         undercloud.add_annotation('openstack image upload')
