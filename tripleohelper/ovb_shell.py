@@ -16,7 +16,6 @@
 # under the License.
 
 import click
-import paramiko.ssh_exception
 import time
 import yaml
 
@@ -123,82 +122,6 @@ def initialize_network(neutron):
     response = neutron.add_interface_router(router['id'], {'subnet_id': subnet_id})
 
 
-def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
-    chaos = tripleohelper.chaos_monkey.ChaosMonkey()
-    # all controller will be, one by one, down 120s then up 120s
-    chaos.down_duration = 10
-    chaos.up_duration = 600
-
-    for node in baremetal_factory.nodes:
-        if node.flavor == 'control':
-            chaos.add_node(node)
-
-    undercloud.install_rally()
-    watchers = [
-        tripleohelper.watcher.Watcher(undercloud, 'nova list'),
-        tripleohelper.watcher.Watcher(undercloud, 'glance image-list'),
-        tripleohelper.watcher.Watcher(undercloud, 'neutron port-list'),
-        tripleohelper.watcher.Watcher(undercloud, 'neutron subnet-list'),
-        tripleohelper.watcher.Watcher(undercloud, 'rally (create-and-delete-stack_with_volume)', 'cd /home/stack/rally/samples/tasks/scenarios/heat && rally task start --task create-and-delete-stack_with_volume.json >> /tmp/rally_deployment_run.log 2>&1'),
-    ]
-    for w in watchers:
-        w.start()
-
-    success = True
-    try:
-        chaos.start()
-        undercloud.add_annotation('start chaos monkey')
-
-        time.sleep(300)
-
-        undercloud.add_annotation('add new controller - 4')
-        undercloud.start_overcloud_deploy(
-            control_scale=4,
-            compute_scale=1,
-            control_flavor='control',
-            compute_flavor='compute',
-            environments=[
-                '/home/stack/network-environment.yaml',
-                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
-        undercloud.add_annotation('controller added')
-
-        time.sleep(300)
-
-        undercloud.add_annotation('add new controller - 5')
-        undercloud.start_overcloud_deploy(
-            control_scale=5,
-            compute_scale=1,
-            control_flavor='control',
-            compute_flavor='compute',
-            environments=[
-                '/home/stack/network-environment.yaml',
-                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
-        undercloud.add_annotation('controller added')
-
-        time.sleep(300)
-
-        undercloud.add_annotation('add new controller - 6')
-        undercloud.start_overcloud_deploy(
-            control_scale=6,
-            compute_scale=1,
-            control_flavor='control',
-            compute_flavor='compute',
-            environments=[
-                '/home/stack/network-environment.yaml',
-                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
-        undercloud.add_annotation('controller added')
-    except paramiko.ssh_exception.SSHException as e:
-        LOG.exception(e)
-        success = False
-    finally:
-        time.sleep(300)
-        chaos.stop = True
-        for w in watchers:
-            w.terminate()
-    LOG.info('success: %s' % success)
-    undercloud.add_annotation('final status: %s' % success)
-
-
 @click.command()
 @click.option('--os-auth-url', envvar='OS_AUTH_URL', required=True,
               help="Keystone auth url.")
@@ -212,9 +135,7 @@ def stress_add_controllers_with_broken_network(undercloud, baremetal_factory):
               help="IP address of an undercloud to reuse.")
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
-@click.option('--stress_test', required=False,
-              help="Name of the stress_test.")
-def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, config_file, stress_test):
+def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, config_file):
     config = yaml.load(config_file)
     logger.setup_logging(config_file='/tmp/ovb.log')
     undercloud = None
@@ -255,12 +176,8 @@ def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, con
             'pool_id': config['rhsm'].get('pool_id')})
         undercloud.configure(config['undercloud']['repositories'])
 
-        undercloud.install_collectd()
-        undercloud.install_grafana()
-        undercloud.add_annotation('Downloading overcloud images')
         undercloud.fetch_overcloud_images(config.get('overcloud'))
         undercloud.patch_ironic_ramdisk()
-        undercloud.inject_collectd('overcloud-full.qcow2')
 
         baremetal_factory = ovb_baremetal.BaremetalFactory(
             nova_api,
@@ -272,7 +189,6 @@ def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, con
                        'os_password': os_password,
                        'os_project_id': os_project_id,
                        'os_auth_url': os_auth_url})
-        undercloud.add_annotation('Creating the Baremetal VMs')
         baremetal_factory.initialize(size=7)
         baremetal_factory.shutdown_nodes(undercloud)
     undercloud.baremetal_factory = baremetal_factory
@@ -295,14 +211,12 @@ undercloud_admin_vip = 192.0.2.201
         # Our OpenStack default tenant are below the 1500 limit, let's ensure we won't
         # have any frame truncated.
         undercloud.set_ctlplane_mtu(1400)
-        undercloud.add_annotation('openstack undercloud install')
         undercloud.openstack_undercloud_install(
             config['undercloud']['image_path'],
             config['undercloud']['image_checksum'])
         undercloud.enable_neutron_hack(os_username, os_password, os_project_id, os_auth_url)
 
     if undercloud.run('test -f overcloudrc', user='stack', ignore_error=True)[1] > 0:
-        undercloud.add_annotation('openstack image upload')
         undercloud.overcloud_image_upload()
         undercloud.load_instackenv()
 
@@ -314,16 +228,12 @@ undercloud_admin_vip = 192.0.2.201
         for node in baremetal_factory.nodes[1:]:
             undercloud.set_flavor(node, 'control')
 
-        undercloud.add_annotation('openstack overcloud inspector')
         undercloud.start_overcloud_inspector()
 
         undercloud.create_file(
             '/home/stack/network-environment.yaml',
             yaml.dump({'parameter_defaults': {'DnsServers': ['8.8.8.8', '8.8.4.4']}}),
             user='stack')
-        # Allow access to influxdb from the subnet
-        undercloud.run('iptables -I INPUT -s 192.0.2.0/24 -p udp -m multiport --dports 25826 -j ACCEPT')
-        undercloud.add_annotation('openstack overcloud deploy')
         undercloud.start_overcloud_deploy(
             control_scale=3,
             compute_scale=1,
@@ -332,10 +242,7 @@ undercloud_admin_vip = 192.0.2.201
             environments=[
                 '/home/stack/network-environment.yaml',
                 '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
-        undercloud.add_annotation('overcloud is ready')
 
-    if stress_test == 'add_controllers_broken_network':
-        stress_add_controllers_with_broken_network(undercloud, baremetal_factory)
 
 # This is for setuptools entry point.
 main = cli
