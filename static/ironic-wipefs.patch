@@ -4,7 +4,7 @@
              iqn = 'iqn.2008-10.org.openstack:%s' % uuidutils.generate_uuid()
  
          device = hardware.dispatch_to_managers('get_os_install_device')
-+        _execute('wipefs -a %s' % device)
++        _execute(['wipefs', '-a', device], 'wipefs failure')
 +
          LOG.debug("Starting ISCSI target with iqn %(iqn)s on device "
                    "%(device)s", {'iqn': iqn, 'device': device})
