@@ -228,7 +228,7 @@ class Server(object):
             self.create_file("%s.md5" % dest, '%s %s\n' % (checksum, dest))
             if self.run('md5sum -c %s.md5' % dest, user=user, ignore_error=True)[1] == 0:
                 return
-        self.run('curl -o %s %s' % (dest, path), user=user)
+        self.run('curl -s -o %s %s' % (dest, path), user=user)
 
     def install_base_packages(self):
         """Install some extra packages.

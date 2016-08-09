@@ -137,7 +137,7 @@ def test_enable_user(server_without_root_enabled):
 expectation_fetch_image = [
     {'func': 'create_file', 'args': {'path': 'somewhere.md5', 'content': 'this_is_a_Bad_md5 somewhere\n'}},
     {'func': 'run', 'args': {'cmd': 'md5sum -c somewhere.md5'}, 'res': ('md5sum: somewhere: no properly formatted MD5 checksum lines found', 1)},
-    {'func': 'run', 'args': {'cmd': 'curl -o somewhere http://host/image'}},
+    {'func': 'run', 'args': {'cmd': 'curl -s -o somewhere http://host/image'}},
 ]
 
 
