@@ -159,7 +159,7 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
             for bm_node in self.nodes:
                 future = executor.submit(
                     bm_node.deploy,
-                    'ipxe.iso',
+                    'ipxe.usb',
                     '192.0.2.%d' % self._idx,
                     flavor='m1.large')
                 self._idx += 1

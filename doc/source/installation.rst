@@ -26,7 +26,7 @@ You will need the following configuration:
 
 - a network called private with a subnet called private.
 - a router called router with a public interface
-- a glance image of ipxe ISO called ipxe.iso::
-    curl -O http://boot.ipxe.org/ipxe.iso
-    glance image-create --name ipxe.iso \
-    --disk-format raw --container-format bare < ipxe.iso
+- a glance image of ipxe called ipxe.usb::
+    curl -O http://boot.ipxe.org/ipxe.usb
+    glance image-create --name ipxe.usb \
+    --disk-format raw --container-format bare < ipxe.usb
