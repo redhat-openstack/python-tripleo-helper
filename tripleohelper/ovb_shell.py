@@ -189,7 +189,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, con
                        'os_password': os_password,
                        'os_project_id': os_project_id,
                        'os_auth_url': os_auth_url})
-        baremetal_factory.initialize(size=7)
+        baremetal_factory.initialize(size=2)
         baremetal_factory.shutdown_nodes(undercloud)
     undercloud.baremetal_factory = baremetal_factory
     if undercloud.run('test -f stackrc', user='stack', ignore_error=True)[1] > 0:
@@ -228,21 +228,21 @@ undercloud_admin_vip = 192.0.2.201
         for node in baremetal_factory.nodes[1:]:
             undercloud.set_flavor(node, 'control')
 
-        undercloud.start_overcloud_inspector()
+#        undercloud.start_overcloud_inspector()
 
         undercloud.create_file(
             '/home/stack/network-environment.yaml',
             yaml.dump({'parameter_defaults': {'DnsServers': ['8.8.8.8', '8.8.4.4']}}),
             user='stack')
         undercloud.start_overcloud_deploy(
-            control_scale=3,
+            control_scale=1,
             compute_scale=1,
             control_flavor='control',
             compute_flavor='compute',
             environments=[
-                '/home/stack/network-environment.yaml',
-                '/usr/share/openstack-tripleo-heat-templates/environments/puppet-pacemaker.yaml'])
+                '/home/stack/network-environment.yaml'])
 
 
 # This is for setuptools entry point.
 main = cli
+cli()
