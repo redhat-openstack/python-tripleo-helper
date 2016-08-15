@@ -146,7 +146,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, con
     nova_api = os_utils.build_nova_api(sess)
 
     if undercloud_ip:
-        undercloud = tripleohelper.undercloud.Undercloud(
+        undercloud = tripleohelper.ovb_undercloud.OVBUndercloud(
             key_filename=config['ssh']['private_key'],
             hostname=undercloud_ip)
         baremetal_factory = ovb_baremetal.BaremetalFactory(

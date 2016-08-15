@@ -31,7 +31,9 @@ class OVBUndercloud(Undercloud):
     in to the br-ctlplane.
     """
     def __init__(self, **kwargs):
-        Undercloud.__init__(self, hostname=None, **kwargs)
+        if 'hostname' not in kwargs:
+            kwargs['hostname'] = None
+        Undercloud.__init__(self, **kwargs)
 
     def start(self, nova_api=None, neutron=None, provisioner=None, ip=None, flavor='m1.small', **kwargs):
         body_value = {
@@ -134,11 +136,11 @@ WantedBy=multi-user.target
         self.baremetal_factory.pxe_netboot('inspector.ipxe')
         Undercloud.start_overcloud_inspector(self)
 
-    def start_overcloud_deploy(self, baremetal_factory):
+    def start_overcloud_deploy(self, **kargs):
         # ensure the overlying Neutron will request the nodes to boot
         # on the boot.ipxe file
         self.baremetal_factory.pxe_netboot('boot.ipxe')
-        Undercloud.start_overcloud_deploy(self)
+        Undercloud.start_overcloud_deploy(self, **kargs)
 
     def load_instackenv(self):
         super(OVBUndercloud, self).load_instackenv()

@@ -126,8 +126,9 @@ class Server(object):
             success_status=success_status, error_callback=error_callback,
             custom_log=custom_log, retry=retry)
 
-    def get_file_content(self, filename):
-        return self.run('cat %s' % filename)[1]
+    def get_file_content(self, filename, user='root'):
+        with self.open(filename, user=user) as f:
+            return f.read().decode()
 
     def yum_install(self, packages, ignore_error=False):
         """Install some packages on the remote host.
@@ -254,7 +255,7 @@ class Server(object):
         :param allow_reboot: If True and if a new kernel has been installed,
         the system will be rebooted
         """
-        self.run('yum update -y --quiet')
+        self.run('yum update -y --quiet', retry=3)
         # reboot if a new initrd has been generated since the boot
         if allow_reboot:
             self.run('find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;')

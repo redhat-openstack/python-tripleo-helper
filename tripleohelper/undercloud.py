@@ -103,6 +103,8 @@ class Undercloud(Server):
 
     def load_instackenv(self):
         """Load the instackenv.json file and wait till the ironic nodes are ready.
+        TODO(Gonéri): should be splitted, write_instackenv() to generate the
+        instackenv.json and instackenv_import() for the rest.
         """
         self.create_file(
             'instackenv.json',

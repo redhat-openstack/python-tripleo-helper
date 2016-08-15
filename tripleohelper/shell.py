@@ -87,7 +87,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, host0_ip, underclo
         vm_undercloud.fetch_overcloud_images(config['overcloud'])
         vm_undercloud.overcloud_image_upload()
         vm_undercloud.baremetal_factory = tripleohelper.baremetal.BaremetalFactory(
-            vm_undercloud.get_file_content('instackenv.json'))
+            vm_undercloud.get_file_content('instackenv.json', user='stack'))
         vm_undercloud.load_instackenv()
         vm_undercloud.create_flavor('baremetal')
         for uuid in vm_undercloud.list_nodes():

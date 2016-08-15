@@ -180,6 +180,11 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
                     "pm_addr": pm_addr
                 })
 
+    def load_instackenv_content(self, undercloud):
+        instackenv_content = undercloud.get_file_content(
+            'instackenv.json', user='stack')
+        return json.loads(instackenv_content)
+
     def reload_environment(self, undercloud):
         servers = {}
         for s in self.nova_api.servers.list():
@@ -195,9 +200,9 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
                 name=s.name)
             node._os_instance = s
             self.nodes.append(node)
-        instackenv = json.loads(undercloud.run('cat instackenv.json', user='stack')[0])
+
         i = iter(self.nodes)
-        for instack_node in instackenv:
+        for instack_node in self.load_instackenv_content(undercloud):
             node = next(i)
             node.mac = instack_node['mac'][0]
             node.refresh_status(undercloud)
