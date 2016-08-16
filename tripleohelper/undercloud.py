@@ -101,14 +101,16 @@ class Undercloud(Server):
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack overcloud image upload', user='stack')
 
+    def write_instackenv(self, baremetal_factory):
+        self.create_file(
+            'instackenv.json',
+            baremetal_factory.get_instackenv_json(), user='stack')
+
     def load_instackenv(self):
         """Load the instackenv.json file and wait till the ironic nodes are ready.
         TODO(Gonéri): should be splitted, write_instackenv() to generate the
         instackenv.json and instackenv_import() for the rest.
         """
-        self.create_file(
-            'instackenv.json',
-            self.baremetal_factory.get_instackenv_json(), user='stack')
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
         ironic_node_nbr = int(self.run('cat /home/stack/instackenv.json |jq -M ".|length"', user='stack')[0])

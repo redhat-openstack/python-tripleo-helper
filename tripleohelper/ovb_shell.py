@@ -93,6 +93,14 @@ def purge_existing_ovb(nova_api, neutron):
             return
 
 
+def get_undercloud_ip(nova_api):
+    i = nova_api.servers.list(search_opts={'name': 'undercloud'})
+    try:
+        return i[0].networks['private'][1]
+    except IndexError:
+        pass
+
+
 def initialize_network(neutron):
     """Initialize an OVB network called provision_bob.
     """
@@ -131,11 +139,10 @@ def initialize_network(neutron):
               help="Openstack password account.")
 @click.option('--os-project-id', envvar='OS_TENANT_ID', required=True,
               help="Openstack project ID.")
-@click.option('--undercloud-ip', required=False,
-              help="IP address of an undercloud to reuse.")
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
-def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, config_file):
+@click.argument('step', nargs=1)
+def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step):
     config = yaml.load(config_file)
     logger.setup_logging(config_file='/tmp/ovb.log')
     undercloud = None
@@ -145,19 +152,8 @@ def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, con
     neutron = os_utils.build_neutron_client(sess)
     nova_api = os_utils.build_nova_api(sess)
 
-    if undercloud_ip:
-        undercloud = tripleohelper.ovb_undercloud.OVBUndercloud(
-            key_filename=config['ssh']['private_key'],
-            hostname=undercloud_ip)
-        baremetal_factory = ovb_baremetal.BaremetalFactory(
-            nova_api,
-            neutron,
-            keypair=config['provisioner']['keypair'],
-            key_filename=config['ssh']['private_key'],
-            security_groups=config['provisioner']['security-groups'],
-        )
-        baremetal_factory.reload_environment(undercloud)
-    else:
+    print('step: %s' % step)
+    if step == 'provisioning':
         purge_existing_ovb(nova_api, neutron)
         initialize_network(neutron)
         undercloud = ovb_undercloud.OVBUndercloud(
@@ -170,14 +166,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, con
             ip='192.0.2.240',
             flavor='m1.large')
 
-        undercloud.rhsm_register({
-            'login': config['rhsm']['login'],
-            'password': config['rhsm'].get('password'),
-            'pool_id': config['rhsm'].get('pool_id')})
-        undercloud.configure(config['undercloud']['repositories'])
-
-        undercloud.fetch_overcloud_images(config.get('overcloud'))
-        undercloud.patch_ironic_ramdisk()
+        undercloud.create_stack_user()
 
         baremetal_factory = ovb_baremetal.BaremetalFactory(
             nova_api,
@@ -190,9 +179,31 @@ def cli(os_auth_url, os_username, os_password, os_project_id, undercloud_ip, con
                        'os_project_id': os_project_id,
                        'os_auth_url': os_auth_url})
         baremetal_factory.initialize(size=2)
+        undercloud.write_instackenv(baremetal_factory)
+        print('done')
+        exit(0)
+    else:  # Restoring the environment
+        undercloud_ip = get_undercloud_ip(nova_api)
+        undercloud = tripleohelper.ovb_undercloud.OVBUndercloud(
+            key_filename=config['ssh']['private_key'],
+            hostname=undercloud_ip)
+        baremetal_factory = ovb_baremetal.BaremetalFactory(
+            nova_api,
+            neutron,
+            keypair=config['provisioner']['keypair'],
+            key_filename=config['ssh']['private_key'],
+            security_groups=config['provisioner']['security-groups'],
+        )
+        baremetal_factory.reload_environment(undercloud)
+        undercloud.baremetal_factory = baremetal_factory
+
+    if step == 'undercloud':
+        undercloud.rhsm_register({
+            'login': config['rhsm']['login'],
+            'password': config['rhsm'].get('password'),
+            'pool_id': config['rhsm'].get('pool_id')})
+        undercloud.configure(config['undercloud']['repositories'])
         baremetal_factory.shutdown_nodes(undercloud)
-    undercloud.baremetal_factory = baremetal_factory
-    if undercloud.run('test -f stackrc', user='stack', ignore_error=True)[1] > 0:
         undercloud_conf = """
 [DEFAULT]
 local_ip = 192.0.2.240/24
@@ -215,8 +226,14 @@ undercloud_admin_vip = 192.0.2.201
             config['undercloud']['image_path'],
             config['undercloud']['image_checksum'])
         undercloud.enable_neutron_hack(os_username, os_password, os_project_id, os_auth_url)
+        exit(0)
 
-    if undercloud.run('test -f overcloudrc', user='stack', ignore_error=True)[1] > 0:
+    if step == 'overcloud':
+        if undercloud.run('test -f stackrc', user='stack', ignore_error=True)[1] > 0:
+            print('Run undercloud step first')
+            exit(1)
+        undercloud.fetch_overcloud_images(config.get('overcloud'))
+        undercloud.patch_ironic_ramdisk()
         undercloud.overcloud_image_upload()
         undercloud.load_instackenv()
 
@@ -241,7 +258,7 @@ undercloud_admin_vip = 192.0.2.201
             compute_flavor='compute',
             environments=[
                 '/home/stack/network-environment.yaml'])
-
+        exit(0)
 
 # This is for setuptools entry point.
 main = cli
