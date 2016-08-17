@@ -246,7 +246,7 @@ undercloud_admin_vip = 192.0.2.201
             undercloud.set_flavor(node, 'control')
 
 #        undercloud.start_overcloud_inspector()
-
+        time.sleep(60)
         undercloud.create_file(
             '/home/stack/network-environment.yaml',
             yaml.dump({'parameter_defaults': {'DnsServers': ['8.8.8.8', '8.8.4.4']}}),
