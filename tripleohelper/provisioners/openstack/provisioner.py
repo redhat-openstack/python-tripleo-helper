@@ -14,14 +14,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import datetime
 import logging
-import sys
 import time
 
 import novaclient.exceptions
-import tripleohelper.host0
-from tripleohelper.provisioners.openstack import utils
 
 LOG = logging.getLogger('tripleohelper')
 
@@ -47,53 +43,6 @@ def build_openstack_instance(nova_api, name, image, flavor, key_name, nics):
             return instance
         time.sleep(5)
         instance = nova_api.servers.get(instance.id)
-
-
-def deploy_host0(os_auth_url, os_username, os_password, os_project_id,
-                 provisioner, private_key, cleanup_environment=False):
-    LOG.info("using 'openstack' provisioner")
-    sess = utils.ks_session(os_auth_url, os_username, os_password, os_project_id)
-    nova_api = utils.build_nova_api(sess)
-    if cleanup_environment is True:
-        utils.remove_instances_by_prefix(nova_api,
-                                         provisioner['instance_name_prefix'])
-
-    image_id_to_boot_from = utils.get_image_id(nova_api,
-                                               provisioner['image']['name'])
-    flavor_id = utils.get_flavor_id(nova_api, provisioner['flavor'])
-    keypair_id = utils.get_keypair_id(nova_api, provisioner['keypair'])
-    network_id = utils.get_network_id(nova_api, provisioner['network'])
-    nics = [{'net-id': network_id}]
-
-    instance_name = "%s-%s" % (provisioner['instance_name_prefix'],
-                               str(datetime.datetime.utcnow()))
-    LOG.info("building instance '%s'" % instance_name)
-
-    instance_host0 = build_openstack_instance(
-        nova_api,
-        instance_name,
-        image_id_to_boot_from,
-        flavor_id,
-        keypair_id,
-        nics)
-
-    if instance_host0:
-        host0_ip = utils.add_a_floating_ip(nova_api, instance_host0)
-        LOG.info("add floating ip '%s'" % host0_ip)
-        utils.add_security_groups(instance_host0,
-                                  provisioner['security-groups'])
-        LOG.info("add security groups '%s'" %
-                 provisioner['security-groups'])
-        LOG.info("instance '%s' ready to use" % instance_name)
-    else:
-        LOG.error("instance '%s' failed" % instance_name)
-        sys.exit(1)
-
-    host0 = tripleohelper.host0.Host0(
-        hostname=host0_ip,
-        user=provisioner['image'].get('user', 'root'),
-        key_filename=private_key)
-    return host0
 
 
 def add_provision_security_group(nova_api):

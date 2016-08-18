@@ -17,7 +17,6 @@ provisioner:
     keypair: DCI
     security-groups:
         - ssh
-        - rhos-mirror-user
 ssh:
     private_key: /home/dci/.ssh/DCI/id_rsa
 repositories: &DEFAULT_REPOSITORIES
@@ -37,7 +36,5 @@ repositories: &DEFAULT_REPOSITORIES
           gpgcheck=0
           enabled=1
       dest: /etc/yum.repos.d/rhos-release-8-director.repo
-host0:
-    repositories: *DEFAULT_REPOSITORIES
 undercloud:
     repositories: *DEFAULT_REPOSITORIES

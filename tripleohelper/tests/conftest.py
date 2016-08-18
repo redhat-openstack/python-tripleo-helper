@@ -1,7 +1,6 @@
 import copy
 
 import tripleohelper.baremetal
-import tripleohelper.host0
 import tripleohelper.ovb_baremetal
 import tripleohelper.ovb_undercloud
 import tripleohelper.server
@@ -155,14 +154,4 @@ def ovb_undercloud(fake_sshclient, nova_api, neutron):
         keypair='someone',
         key_filename='somewhere',
         security_groups=['ssh'])
-    return s
-
-
-@pytest.fixture
-def host0(fake_sshclient):
-    s = tripleohelper.host0.Host0(hostname='toto')
-    s._root_user_enabled = True
-    ssh = FakeSshClient(None, None, None, None)
-    s._ssh_pool.add_ssh_client('stack', ssh)
-    s._ssh_pool.add_ssh_client('root', ssh)
     return s
