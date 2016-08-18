@@ -80,9 +80,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, host0_ip, underclo
 
         vm_undercloud.configure(config['undercloud']['repositories'])
         vm_undercloud.set_ctlplane_mtu(1400)
-        vm_undercloud.openstack_undercloud_install(
-            config['undercloud']['image_path'],
-            config['undercloud']['image_checksum'])
+        vm_undercloud.openstack_undercloud_install()
 
         vm_undercloud.fetch_overcloud_images(config['overcloud'])
         vm_undercloud.overcloud_image_upload()

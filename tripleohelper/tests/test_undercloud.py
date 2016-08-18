@@ -75,11 +75,6 @@ def test_set_ctlplane_mtu(undercloud):
 
 
 expectation_openstack_undercloud_install = [
-    {'func': 'create_file', 'args': {
-        'path': '/home/stack/guest_image.qcow2.md5',
-        'content': 'acaf294494448266313343dec91ce91a /home/stack/guest_image.qcow2\n'
-    }},
-    {'func': 'run', 'args': {'cmd': 'md5sum -c /home/stack/guest_image.qcow2.md5'}},
     {'func': 'run', 'args': {'cmd': (
         'repoquery --whatprovides /usr/share/instack-undercloud/'
         'puppet-stack-config/puppet-stack-config.pp')
@@ -99,8 +94,7 @@ expectation_openstack_undercloud_install = [
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_openstack_undercloud_install], indirect=['fake_sshclient'])
 def test_openstack_undercloud_install(undercloud):
-    undercloud.openstack_undercloud_install(
-        'http://host/guest_image_path.qcow2', 'acaf294494448266313343dec91ce91a')
+    undercloud.openstack_undercloud_install()
 
 
 expectation_configure = [

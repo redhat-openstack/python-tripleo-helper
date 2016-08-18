@@ -222,9 +222,7 @@ undercloud_admin_vip = 192.0.2.201
         # Our OpenStack default tenant are below the 1500 limit, let's ensure we won't
         # have any frame truncated.
         undercloud.set_ctlplane_mtu(1400)
-        undercloud.openstack_undercloud_install(
-            config['undercloud']['image_path'],
-            config['undercloud']['image_checksum'])
+        undercloud.openstack_undercloud_install()
         undercloud.enable_neutron_hack(os_username, os_password, os_project_id, os_auth_url)
         exit(0)
 

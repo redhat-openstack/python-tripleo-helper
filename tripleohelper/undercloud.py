@@ -55,16 +55,9 @@ class Undercloud(Server):
         hostname_f = self.run('cat /etc/hostname')[0].rstrip('\n')
         self.run("sed -i 's,127.0.0.1,127.0.0.1 %s %s %s undercloud.openstacklocal,' /etc/hosts" % (hostname_s, hostname_f, hostname))
 
-    def openstack_undercloud_install(self, guest_image_path, guest_image_checksum):
+    def openstack_undercloud_install(self):
         """Deploy an undercloud on the host.
         """
-        # TODO(Gonéri) we don't use this image
-        self.fetch_image(
-            path=guest_image_path,
-            checksum=guest_image_checksum,
-            dest='/home/stack/guest_image.qcow2',
-            user='stack')
-
         instack_undercloud_ver, _ = self.run('repoquery --whatprovides /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.pp')
         if instack_undercloud_ver.rstrip('\n') == 'instack-undercloud-0:2.2.0-1.el7ost.noarch':
             LOG.warn('Workaround for BZ1298189')
