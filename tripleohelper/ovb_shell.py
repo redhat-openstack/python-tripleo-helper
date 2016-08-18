@@ -262,4 +262,3 @@ undercloud_admin_vip = 192.0.2.201
 
 # This is for setuptools entry point.
 main = cli
-cli()
