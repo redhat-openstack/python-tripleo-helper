@@ -9,10 +9,11 @@ Use of the CLI to deploy a TripleO (OSP8)
 Deploy OSP8 is a RHEL7.2 on an existing OpenStack (a.k.a
 OpenStack Virtual Baremetal)::
 
-    chainsaw-ovb --config-file tripleohelper_osp.conf
+    chainsaw-ovb --config-file tripleohelper_osp.conf provisioning
+    chainsaw-ovb --config-file tripleohelper_osp.conf undercloud
+    chainsaw-ovb --config-file tripleohelper_osp.conf overcloud
 
 .. code-block:: YAML
-
 
     ---
     rhsm:
