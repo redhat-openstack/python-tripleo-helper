@@ -43,7 +43,7 @@ class Server(object):
         self.hostname = hostname
         self._key_filename = key_filename
         self.via_ip = via_ip
-        self._ssh_pool = ssh.PoolSshClient()
+        self.ssh_pool = ssh.PoolSshClient()
         self._redirect_to_host = redirect_to_host
         self.rhsm_active = False
         self.rhsm_channels = [
@@ -61,7 +61,7 @@ class Server(object):
         account is enable, if this is not the case, it will try to get the name
         of admin user and use it to re-enable the root account.
         """
-        if user in self._ssh_pool._ssh_clients:
+        if user in self.ssh_pool._ssh_clients:
             return
 
         if user == 'root':
@@ -88,13 +88,13 @@ class Server(object):
                 self.enable_user(image_user)
                 LOG.info('enabling the root user')
                 _cmd = "sudo sed -i 's,.*ssh-rsa,ssh-rsa,' /root/.ssh/authorized_keys"
-                self._ssh_pool.run(image_user, _cmd)
+                self.ssh_pool.run(image_user, _cmd)
                 _root_ssh_client.start()
-            self._ssh_pool.add_ssh_client('root', _root_ssh_client)
+            self.ssh_pool.add_ssh_client('root', _root_ssh_client)
             return
 
         # add the cloud user to the ssh pool
-        self._ssh_pool.build_ssh_client(
+        self.ssh_pool.build_ssh_client(
             hostname=self.hostname,
             user=user,
             key_filename=self._key_filename,
@@ -104,24 +104,24 @@ class Server(object):
         """Upload a local file on the remote host.
         """
         self.enable_user(user)
-        return self._ssh_pool.send_file(user, local_path, remote_path, unix_mode=unix_mode)
+        return self.ssh_pool.send_file(user, local_path, remote_path, unix_mode=unix_mode)
 
     def open(self, filename, mode='r', user='root'):
         self.enable_user(user)
-        return self._ssh_pool.open(user, filename, mode)
+        return self.ssh_pool.open(user, filename, mode)
 
     def create_file(self, path, content, mode='w', user='root'):
         """Create a file on the remote host.
         """
         self.enable_user(user)
-        return self._ssh_pool.create_file(user, path, content, mode)
+        return self.ssh_pool.create_file(user, path, content, mode)
 
     def run(self, cmd, user='root', sudo=False, ignore_error=False,
             success_status=(0,), error_callback=None, custom_log=None, retry=0):
         """Run a command on the remote host.
         """
         self.enable_user(user)
-        return self._ssh_pool.run(
+        return self.ssh_pool.run(
             user, cmd, sudo=sudo, ignore_error=ignore_error,
             success_status=success_status, error_callback=error_callback,
             custom_log=custom_log, retry=retry)
@@ -218,9 +218,9 @@ class Server(object):
         self.run('chown -R stack:stack /home/stack/.ssh')
         self.run('chmod 700 /home/stack/.ssh')
         self.run('chmod 600 /home/stack/.ssh/authorized_keys')
-        self._ssh_pool.build_ssh_client(self.hostname, 'stack',
-                                        self._key_filename,
-                                        self.via_ip)
+        self.ssh_pool.build_ssh_client(self.hostname, 'stack',
+                                       self._key_filename,
+                                       self.via_ip)
 
     def fetch_image(self, path, dest, checksum=None, user='root'):
         """Store in the user home directory an image from a remote location.
@@ -280,4 +280,4 @@ class Server(object):
 
         The file will be re-sourced before any new command invocation.
         """
-        return self._ssh_pool.add_environment_file(user, filename)
+        return self.ssh_pool.add_environment_file(user, filename)

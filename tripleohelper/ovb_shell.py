@@ -180,6 +180,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step)
                        'os_auth_url': os_auth_url})
         baremetal_factory.initialize(size=2)
         undercloud.write_instackenv(baremetal_factory)
+        undercloud.ssh_pool.stop_all()
         print('done')
         exit(0)
     else:  # Restoring the environment
@@ -224,6 +225,7 @@ undercloud_admin_vip = 192.0.2.201
         undercloud.set_ctlplane_mtu(1400)
         undercloud.openstack_undercloud_install()
         undercloud.enable_neutron_hack(os_username, os_password, os_project_id, os_auth_url)
+        undercloud.ssh_pool.stop_all()
         exit(0)
 
     if step == 'overcloud':
@@ -256,6 +258,7 @@ undercloud_admin_vip = 192.0.2.201
             compute_flavor='compute',
             environments=[
                 '/home/stack/network-environment.yaml'])
+        undercloud.ssh_pool.stop_all()
         exit(0)
 
 # This is for setuptools entry point.

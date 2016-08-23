@@ -179,6 +179,7 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
                     "pm_password": "password",
                     "pm_addr": pm_addr
                 })
+        self.bmc.ssh_pool.stop_all()
 
     def load_instackenv_content(self, undercloud):
         instackenv_content = undercloud.get_file_content(

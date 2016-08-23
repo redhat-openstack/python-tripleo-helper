@@ -92,8 +92,8 @@ def server(server_without_root_enabled):
     s = tripleohelper.server.Server(hostname='toto')
     s._root_user_enabled = True
     ssh = FakeSshClient(None, None, None, None)
-    s._ssh_pool.add_ssh_client('stack', ssh)
-    s._ssh_pool.add_ssh_client('root', ssh)
+    s.ssh_pool.add_ssh_client('stack', ssh)
+    s.ssh_pool.add_ssh_client('root', ssh)
     return s
 
 
@@ -102,8 +102,8 @@ def undercloud(fake_sshclient):
     s = tripleohelper.undercloud.Undercloud(hostname='toto')
     s._root_user_enabled = True
     ssh = FakeSshClient(None, None, None, None)
-    s._ssh_pool.add_ssh_client('stack', ssh)
-    s._ssh_pool.add_ssh_client('root', ssh)
+    s.ssh_pool.add_ssh_client('stack', ssh)
+    s.ssh_pool.add_ssh_client('root', ssh)
     s.baremetal_factory = tripleohelper.baremetal.BaremetalFactory(
         instackenv_content='[{"pm_addr": "neverland", "pm_user": "root", "pm_password": "pw"}]')
     return s
@@ -138,8 +138,8 @@ def ovb_undercloud(fake_sshclient, nova_api, neutron):
     s = tripleohelper.ovb_undercloud.OVBUndercloud()
     s._root_user_enabled = True
     ssh = FakeSshClient(None, None, None, None)
-    s._ssh_pool.add_ssh_client('stack', ssh)
-    s._ssh_pool.add_ssh_client('root', ssh)
+    s.ssh_pool.add_ssh_client('stack', ssh)
+    s.ssh_pool.add_ssh_client('root', ssh)
     s.start(
         nova_api=nova_api,
         neutron=neutron,
