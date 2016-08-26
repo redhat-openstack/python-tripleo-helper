@@ -5,5 +5,3 @@ mock>=1.0.1
 pytest>=2.6.2
 pytest-cov>=1.8.0
 pytest-xdist
-doc8
-Sphinx
