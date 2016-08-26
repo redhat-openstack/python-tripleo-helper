@@ -13,9 +13,7 @@ For example:
 
 - deploy 4 nodes with HA
 - add a node
-- perform [https://en.wikipedia.org/wiki/Chaos_Monkey](Chaos Monkey) testing
 - execute tempest testing
-- save metrics collected during the test
 
 At this point, you can deploy your OpenStack on an existing public
 OpenStack (OVB).
