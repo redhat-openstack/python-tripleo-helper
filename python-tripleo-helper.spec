@@ -24,7 +24,6 @@ Summary:        A Python library to drive a TripleO based installer
 BuildRequires:  python2-devel
 BuildRequires:  python-setuptools
 BuildRequires:  python-tox
-BuildRequires:  gcc
 BuildRequires:  libffi-devel
 BuildRequires:  openssl-devel
 
@@ -47,7 +46,6 @@ Summary:        A Python library to drive a TripleO based installer
 BuildRequires:  python3-devel
 BuildRequires:  python3-setuptools
 BuildRequires:  python-tox
-BuildRequires:  gcc
 BuildRequires:  libffi-devel
 BuildRequires:  openssl-devel
 
