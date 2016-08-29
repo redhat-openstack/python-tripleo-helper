@@ -172,7 +172,7 @@ class Server(object):
         self.run('rm /etc/pki/product/69.pem', ignore_error=True)
         custom_log = 'subscription-manager register --username %s --password *******' % login
         self.run(
-            'subscription-manager register --username %s --password %s' % (
+            'subscription-manager register --username %s --password "%s"' % (
                 login, password),
             success_status=(0, 64),
             custom_log=custom_log,
