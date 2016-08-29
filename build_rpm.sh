@@ -33,7 +33,7 @@ for arch in epel-7-x86_64; do
     sed -i '$i[centos-openstack-mitaka]' ${HOME}/.mock/${arch}-with-openstack-repo.cfg
     sed -i '$iname=CentOS-7 - OpenStack mitaka' ${HOME}/.mock/${arch}-with-openstack-repo.cfg
     sed -i '$ibaseurl=http://mirror.centos.org/centos/7/cloud/$basearch/openstack-mitaka/' ${HOME}/.mock/${arch}-with-openstack-repo.cfg
-    sed -i '$igpgcheck=1' ${HOME}/.mock/${arch}-with-openstack-repo.cfg
+    sed -i '$igpgcheck=0' ${HOME}/.mock/${arch}-with-openstack-repo.cfg
     sed -i '$ienabled=1' ${HOME}/.mock/${arch}-with-openstack-repo.cfg
     sed -i '$igpgkey=file:///etc/pki/rpm-gpg/RPM-GPG-KEY-CentOS-SIG-Cloud' ${HOME}/.mock/${arch}-with-openstack-repo.cfg
 
