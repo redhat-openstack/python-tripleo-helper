@@ -45,10 +45,6 @@ setuptools.setup(
     description="A Python helper to drive a TripleO based installer.",
     long_description=_README_CONTENT,
     install_requires=_get_requirements(),
-    dependency_links=[
-        "https://github.com/redhat-cip/python-dciclient.git"
-        "#egg=python-dciclient"
-    ],
     url="https://github.com/redhat-openstack/python-tripleo-helper",
     licence="Apache v2.0",
     include_package_data=True,
