@@ -38,7 +38,7 @@ _README_CONTENT = open("%s/%s" % (os.path.dirname(os.path.abspath(__file__)),
 setuptools.setup(
     name='tripleo-helper',
     version=version.__version__,
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     author="Red Hat ci team.",
     author_email="distributed-ci@redhat.com",
     description="A Python helper to drive a TripleO based installer.",
