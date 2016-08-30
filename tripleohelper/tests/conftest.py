@@ -113,10 +113,13 @@ def undercloud(fake_sshclient):
 def nova_api():
     test_nova_api = mock.Mock()
     test_nova_api.flavors.list.return_value = []
-    floating_ip = mock.Mock()
-    floating_ip.instance_id = None
-    floating_ip.fixed_ip = None
-    test_nova_api.floating_ips.list.return_value = [floating_ip]
+    floating_ips = [mock.Mock(), mock.Mock()]
+    for f in floating_ips:
+        f.instance_id = None
+        f.fixed_ip = None
+    floating_ips[0].ip = '1.2.3.3'
+    floating_ips[1].ip = '1.2.3.4'
+    test_nova_api.floating_ips.list.return_value = floating_ips
     test_nova_api.images.list.return_value = []
     test_nova_api.keypairs.list.return_value = []
     test_nova_api.networks.list.return_value = []

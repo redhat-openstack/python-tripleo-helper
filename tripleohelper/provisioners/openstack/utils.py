@@ -71,16 +71,17 @@ def get_network_id(nova_api, network_name):
     return _get_id_by_attr(networks, 'label', network_name)
 
 
-def get_a_floating_ip(nova_api):
+def get_floating_ip(nova_api, ip=None):
     floating_ips = nova_api.floating_ips.list()
     for floating_ip in floating_ips:
-        if floating_ip.instance_id is None and floating_ip.fixed_ip is None:
+        if ip and ip == floating_ip.ip:
             return floating_ip
-    return None
+        elif floating_ip.instance_id is None and floating_ip.fixed_ip is None:
+            return floating_ip
 
 
-def add_a_floating_ip(nova_api, os_instance):
-    floating_ip = get_a_floating_ip(nova_api)
+def add_a_floating_ip(nova_api, os_instance, floating_ip=None):
+    floating_ip = get_floating_ip(nova_api, floating_ip)
     os_instance.add_floating_ip(floating_ip.ip)
     LOG.info("floating ip '%s' attached to '%s'" % (floating_ip.ip, os_instance.name))
     return floating_ip.ip

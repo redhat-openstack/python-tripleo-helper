@@ -63,14 +63,15 @@ def test_build_nova_api(mock_nova_client):
     mock_nova_client.assert_called_with(2, session=sess)
 
 
-def test_get_a_floating_ip(nova_api):
-    assert utils.get_a_floating_ip(nova_api) is not None
+def test_get_floating_ip(nova_api):
+    assert utils.get_floating_ip(nova_api) is not None
 
     nova_api.floating_ips.list()[0].instance_id = "instance_id"
-    assert utils.get_a_floating_ip(nova_api) is None
+    assert utils.get_floating_ip(nova_api) is None
 
     nova_api.floating_ips.list()[0].instance_id = None
     nova_api.floating_ips.list()[0].fixed_ip = "fixed_ip"
+    assert utils.get_floating_ip(nova_api) is None
 
 
 def test_add_a_floating_ip(nova_api):

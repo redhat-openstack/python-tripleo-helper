@@ -38,3 +38,4 @@ repositories: &DEFAULT_REPOSITORIES
       dest: /etc/yum.repos.d/rhos-release-8-director.repo
 undercloud:
     repositories: *DEFAULT_REPOSITORIES
+    floating_ip: 10.4.5.6
