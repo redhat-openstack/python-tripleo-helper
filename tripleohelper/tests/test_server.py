@@ -35,7 +35,7 @@ def test_create_user(server):
 
 expectation_rhsm_register = [
     {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
-    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password password'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password "password"'}},
     {'func': 'run', 'args': {'cmd': 'subscription-manager attach --auto'}},
 ]
 
@@ -47,7 +47,7 @@ def test_rhsm_register(server):
 
 expectation_rhsm_register_with_pool_id = [
     {'func': 'run', 'args': {'cmd': 'rm /etc/pki/product/69.pem'}},
-    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password password'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager register --username login --password "password"'}},
     {'func': 'run', 'args': {'cmd': 'subscription-manager attach --pool pool_id'}},
 ]
 
