@@ -38,7 +38,8 @@ _README_CONTENT = open("%s/%s" % (os.path.dirname(os.path.abspath(__file__)),
 setuptools.setup(
     name='tripleo-helper',
     version=version.__version__,
-    packages=setuptools.find_packages(),
+    packages=setuptools.find_packages(
+        exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
     author="Red Hat ci team.",
     author_email="distributed-ci@redhat.com",
     description="A Python helper to drive a TripleO based installer.",
@@ -51,6 +52,9 @@ setuptools.setup(
     url="https://github.com/redhat-openstack/python-tripleo-helper",
     licence="Apache v2.0",
     include_package_data=True,
+    package_data={
+        'tripleohelper': ['static/*', 'templates/*']
+    },
     classifiers=[
         "Environment :: Console",
         "Intended Audience :: Developers",

@@ -20,6 +20,7 @@ import sys
 import tripleohelper.provisioners.openstack.provisioner as os_provisioner
 from tripleohelper.provisioners.openstack import utils as os_utils
 from tripleohelper.server import Server
+from tripleohelper.utils import pkg_data_filename
 
 LOG = logging.getLogger('tripleohelper')
 
@@ -102,7 +103,7 @@ class OvbBmc(Server):
         self._bmc_net = self.neutron.create_network(body=body_sample)['network']
         os_utils.get_network_id(self.nova_api, 'provision_bob')
 
-        self.send_file('static/openstackbmc', '/usr/local/bin/openstackbmc', unix_mode=0o755)
+        self.send_file(pkg_data_filename('static', 'openstackbmc'), '/usr/local/bin/openstackbmc', unix_mode=0o755)
         self.yum_install(['https://www.rdoproject.org/repos/rdo-release.rpm'])
         self.yum_install(['python-novaclient', 'python-neutronclient', 'python-keystoneclient', 'python-pip', 'python2-oslo-utils', 'python-crypto'])
         self.run('pip install pyghmi')

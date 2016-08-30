@@ -20,6 +20,7 @@ import sys
 import tripleohelper.provisioners.openstack.provisioner as os_provisioner
 from tripleohelper.provisioners.openstack import utils as os_utils
 from tripleohelper.undercloud import Undercloud
+from tripleohelper.utils import pkg_data_filename
 
 LOG = logging.getLogger('tripleohelper')
 
@@ -95,7 +96,7 @@ MTU=1400
         firewall limitations (no-spoofing and DHCP restriction).
         """
         self.yum_install(['python-neutronclient'])
-        self.send_file('static/ovb_fix_neutron_addr', '/usr/local/bin/ovb_fix_neutron_addr', unix_mode=0o755)
+        self.send_file(pkg_data_filename('static', 'ovb_fix_neutron_addr'), '/usr/local/bin/ovb_fix_neutron_addr', unix_mode=0o755)
         content = """
 [Unit]
 Description=OVB neutron hack Service
@@ -126,7 +127,7 @@ WantedBy=multi-user.target
         """
         tmpdir = self.run('mktemp -d')[0].rstrip('\n')
         self.run('cd {tmpdir}; zcat /home/stack/ironic-python-agent.initramfs| cpio -id'.format(tmpdir=tmpdir))
-        self.send_file('static/ironic-wipefs.patch', '/tmp/ironic-wipefs.patch')
+        self.send_file(pkg_data_filename('static', 'ironic-wipefs.patch'), '/tmp/ironic-wipefs.patch')
         self.run('cd {tmpdir}; patch -p0 < /tmp/ironic-wipefs.patch'.format(tmpdir=tmpdir))
         self.run('cd {tmpdir}; find . | cpio --create --format=newc > /home/stack/ironic-python-agent.initramfs'.format(tmpdir=tmpdir))
 
