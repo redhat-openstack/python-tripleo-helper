@@ -142,7 +142,7 @@ def initialize_network(neutron):
 @click.option('--config-file', required=True, type=click.File('rb'),
               help="Chainsaw path configuration file.")
 @click.argument('step', nargs=1, required=True,
-                type=click.Choice(['provisionning', 'undercloud', 'overcloud']))
+                type=click.Choice(['provisioning', 'undercloud', 'overcloud']))
 def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step):
     config = yaml.load(config_file)
     logger.setup_logging(config_file='/tmp/ovb.log')
