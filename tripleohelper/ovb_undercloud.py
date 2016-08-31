@@ -36,7 +36,8 @@ class OVBUndercloud(Undercloud):
             kwargs['hostname'] = None
         Undercloud.__init__(self, **kwargs)
 
-    def start(self, nova_api=None, neutron=None, provisioner=None, ip=None, flavor='m1.small', **kwargs):
+    def start(self, nova_api=None, neutron=None, provisioner=None, ip=None,
+              flavor='m1.small', floating_ip=None, **kwargs):
         body_value = {
             "port": {
                 "admin_state_up": True,
@@ -66,7 +67,7 @@ class OVBUndercloud(Undercloud):
             LOG.error("deployment has failed")
             sys.exit(1)
 
-        self.hostname = os_utils.add_a_floating_ip(nova_api, os_instance)
+        self.hostname = os_utils.add_a_floating_ip(nova_api, os_instance, floating_ip)
         os_utils.add_security_groups(os_instance,
                                      provisioner['security-groups'])
         os_provisioner.add_provision_security_group(nova_api)
