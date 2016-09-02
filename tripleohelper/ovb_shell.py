@@ -260,6 +260,19 @@ undercloud_admin_vip = 192.0.2.201
             compute_flavor='compute',
             environments=[
                 '/home/stack/network-environment.yaml'])
+
+        # create the public network
+        undercloud.add_environment_file(
+            user='stack', filename='overcloudrc')
+        undercloud.run(
+            'neutron net-create ext-net --shared --router:external=True',
+            user='stack')
+        # NOTE(Goneri): this range is from TripleO default configuration.
+        undercloud.run((
+            'neutron subnet-create ext-net '
+            '10.0.0.0/24 '
+            '--name external '
+            '--allocation-pool start=10.0.0.4,end=10.0.0.250'), user='stack')
         undercloud.ssh_pool.stop_all()
         exit(0)
 
