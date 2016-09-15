@@ -340,6 +340,7 @@ class PoolSshClient(object):
     def stop_all(self):
         for ssh_client in self._ssh_clients.values():
             ssh_client.stop()
+        self._ssh_clients = {}
 
     def add_environment_file(self, user, filename):
         self._check_ssh_client(user)

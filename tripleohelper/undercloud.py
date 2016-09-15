@@ -15,6 +15,7 @@
 # under the License.
 
 import logging
+import re
 import time
 
 from tripleohelper.server import Server
@@ -26,6 +27,7 @@ class Undercloud(Server):
     def __init__(self, **kwargs):
         self.baremetal_factory = None
         Server.__init__(self, **kwargs)
+        self._rhosp_version = None
 
     def configure(self, repositories):
         """Prepare the system to be ready for an undercloud installation.
@@ -35,19 +37,16 @@ class Undercloud(Server):
         self.create_stack_user()
         self.install_base_packages()
         self.clean_system()
-        self.yum_update()
+        self.yum_update(allow_reboot=True)
         self.install_osp()
         self.set_selinux('permissive')
         self.fix_hostname()
 
     def set_ctlplane_mtu(self, mtu=1400):
-        # TODO(Gonéri): Ensure we will get a MTU 1400 on the br-ctlplane for OVB or libvirt
-        # https://review.openstack.org/#/c/288041
-        self.yum_install(['instack-undercloud'])
-        # Ensure the os-net-config configuration has not been generated yet.
-        self.run('test ! -f /etc/os-net-config/config.json')
-        self.run('sed -i \'s/"name": "br-ctlplane",/"name": "br-ctlplane",\\n      "mtu": %d,/\' /usr/share/instack-undercloud/undercloud-stack-config/config.json.template' % mtu)
-        self.run('sed -i \'s/"primary": "true"/"primary": "true",\\n        "mtu": %d/\' /usr/share/instack-undercloud/undercloud-stack-config/config.json.template' % mtu)
+        self.run((
+            'find /etc/sysconfig/network-scripts '
+            '-name "ifcfg-eth?" -exec sed -i \'$ iMTU="%d"\' {} \;') % mtu)
+        self.run('systemctl restart network')
 
     def fix_hostname(self):
         hostname = self.run('hostname')[0].rstrip('\n')
@@ -63,7 +62,7 @@ class Undercloud(Server):
             LOG.warn('Workaround for BZ1298189')
             self.run("sed -i \"s/.*Keystone_domain\['heat_domain'\].*/Service\['keystone'\] -> Class\['::keystone::roles::admin'\] -> Class\['::heat::keystone::domain'\]/\" /usr/share/instack-undercloud/puppet-stack-config/puppet-stack-config.pp")
 
-        self.run('openstack undercloud install', user='stack')
+        self.run('OS_PASSWORD=bob openstack undercloud install', user='stack')
         # NOTE(Gonéri): we also need this after the overcloud deployment
         if self.run('rpm -qa openstack-ironic-api')[0].rstrip('\n') == 'openstack-ironic-api-4.2.2-3.el7ost.noarch':
             LOG.warn('Workaround for BZ1297796')
@@ -208,3 +207,11 @@ class Undercloud(Server):
         o_o_deploy_command = self._prepare_o_o_deploy_command(**kwargs)
         self.run(o_o_deploy_command, user='stack')
         self.run('test -f overcloudrc', user='stack')
+
+    def rhosp_version(self):
+        if self._rhosp_version:
+            return self._rhosp_version
+        r = self.run('yum info rhosp-director-images')
+        raw_version = re.search('Version\ +:\ +([\w\.]+)', r[0]).group(1)
+        self._rhosp_version = float(raw_version.rstrip())
+        return self.rhosp_version()

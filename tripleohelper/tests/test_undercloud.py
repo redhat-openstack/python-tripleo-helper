@@ -58,14 +58,8 @@ def test_fix_hostname(undercloud):
 
 
 expectation_set_ctlplane_mtu = [
-    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet instack-undercloud'}},
-    {'func': 'run', 'args': {'cmd': 'test ! -f /etc/os-net-config/config.json'}},
-    {'func': 'run', 'args': {'cmd': 'sed -i \'s/"name": "br-ctlplane",/"name": "br-ctlplane",\\n      '
-                             '"mtu": 1400,/\' '
-                             '/usr/share/instack-undercloud/undercloud-stack-config/config.json.template'}},
-    {'func': 'run', 'args': {'cmd': 'sed -i \'s/"primary": "true"/"primary": "true",\\n        "mtu": '
-                             "1400/' "
-                             '/usr/share/instack-undercloud/undercloud-stack-config/config.json.template'}},
+    {'func': 'run', 'args': {'cmd': 'find /etc/sysconfig/network-scripts -name "ifcfg-eth?" -exec sed -i \'$ iMTU="1400"\' {} \\;'}},
+    {'func': 'run', 'args': {'cmd': 'systemctl restart network'}},
 ]
 
 
@@ -85,7 +79,7 @@ expectation_openstack_undercloud_install = [
         '-> Class\\[\'::heat::keystone::domain\'\\]/" '
         '/usr/share/instack-undercloud/puppet-stack-config/'
         'puppet-stack-config.pp')}},
-    {'func': 'run', 'args': {'cmd': 'openstack undercloud install'}},
+    {'func': 'run', 'args': {'cmd': 'OS_PASSWORD=bob openstack undercloud install'}},
     {'func': 'run', 'args': {'cmd': 'rpm -qa openstack-ironic-api'}, 'res': ('openstack-ironic-api-4.2.2-3.el7ost.noarch\n', 0,)},
     {'func': 'run', 'args': {'cmd': 'systemctl start openstack-ironic-api.service'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; heat stack-list'}},
@@ -110,6 +104,7 @@ expectation_configure += tripleohelper.tests.test_server.expectation_create_user
 expectation_configure += tripleohelper.tests.test_server.expectation_install_base_packages
 expectation_configure += tripleohelper.tests.test_server.expectation_clean_system
 expectation_configure += tripleohelper.tests.test_server.expectation_yum_update
+expectation_configure += [{'func': 'run', 'args': {'cmd': 'uname -a'}}]
 expectation_configure += tripleohelper.tests.test_server.expectation_install_osp
 expectation_configure += expectation_set_selinux
 expectation_configure += expectation_fix_hostname

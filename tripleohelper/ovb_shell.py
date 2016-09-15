@@ -211,6 +211,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step)
 [DEFAULT]
 local_ip = 192.0.2.240/24
 local_interface = eth1
+local_mtu = 1400
 dhcp_start = 192.0.2.50
 dhcp_end = 192.0.2.70
 undercloud_public_vip = 192.0.2.200
@@ -235,7 +236,8 @@ undercloud_admin_vip = 192.0.2.201
             print('Run undercloud step first')
             exit(1)
         undercloud.fetch_overcloud_images(config.get('overcloud'))
-        undercloud.patch_ironic_ramdisk()
+        if undercloud.rhosp_version() < 10:
+            undercloud.patch_ironic_ramdisk()
         undercloud.overcloud_image_upload()
         undercloud.load_instackenv()
 

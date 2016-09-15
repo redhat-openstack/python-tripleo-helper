@@ -82,12 +82,13 @@ def test_clean_system(server):
 
 expectation_yum_update = [
     {'func': 'run', 'args': {'cmd': 'yum update -y --quiet'}},
+    {'func': 'run', 'args': {'cmd': 'find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;'}},
 ]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_yum_update], indirect=['fake_sshclient'])
 def test_yum_update(server):
-    server.yum_update()
+    server.yum_update(allow_reboot=True)
 
 
 expectation_yum_update_with_reboot = [

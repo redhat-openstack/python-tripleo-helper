@@ -258,7 +258,8 @@ class Server(object):
         self.run('yum update -y --quiet', retry=3)
         # reboot if a new initrd has been generated since the boot
         if allow_reboot:
-            self.run('find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;')
+            self.run('find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;', ignore_error=True)
+            self.ssh_pool.stop_all()
 
     def install_osp(self):
         """Install the OSP distribution.
