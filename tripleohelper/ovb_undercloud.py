@@ -21,6 +21,7 @@ import tripleohelper.provisioners.openstack.provisioner as os_provisioner
 from tripleohelper.provisioners.openstack import utils as os_utils
 from tripleohelper.undercloud import Undercloud
 from tripleohelper.utils import pkg_data_filename
+from tripleohelper.utils import protect_password
 
 LOG = logging.getLogger('tripleohelper')
 
@@ -115,7 +116,7 @@ WantedBy=multi-user.target
             '/usr/lib/systemd/system/%s' % unit,
             content.format(
                 os_username=os_username,
-                os_password=os_password,
+                os_password=protect_password(os_password),
                 os_project_id=os_project_id,
                 os_auth_url=os_auth_url))
         self.run('systemctl enable %s' % unit)

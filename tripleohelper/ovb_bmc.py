@@ -21,6 +21,7 @@ import tripleohelper.provisioners.openstack.provisioner as os_provisioner
 from tripleohelper.provisioners.openstack import utils as os_utils
 from tripleohelper.server import Server
 from tripleohelper.utils import pkg_data_filename
+from tripleohelper.utils import protect_password
 
 LOG = logging.getLogger('tripleohelper')
 
@@ -172,12 +173,11 @@ Restart=always
 WantedBy=multi-user.target
 """
         unit = 'openstack-bmc-%d.service' % self._nic_cpt
-        protected_os_password = '"' + self.os_password.replace('"', '\\"') + '"'
         self.create_file(
             '/usr/lib/systemd/system/%s' % unit,
             content.format(
                 os_username=self.os_username,
-                os_password=protected_os_password,
+                os_password=protect_password(self.os_password),
                 os_project_id=self.os_project_id,
                 os_auth_url=self.os_auth_url,
                 bm_instance=bm_instance,

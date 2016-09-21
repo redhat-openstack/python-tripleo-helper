@@ -30,3 +30,7 @@ def pkg_data_filename(resource_name, filename):
     if filename is not None:
         resource_filename = os.path.join(resource_filename, filename)
     return resource_filename
+
+
+def protect_password(password):
+    return '"' + password.replace('"', '\\"') + '"'
