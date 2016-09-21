@@ -35,7 +35,11 @@ def fix_allowed_address_pairs(neutron_down_below, vip_addresses):
             update_port(port['id'], {'allowed_address_pairs': new_allowed_address_pairs})
 
 def fix_baremetal_ip(neutron_down_below):
-    hosts = subprocess.check_output("find /var/lib/neutron/dhcp -name host -exec cat {} \;", shell=True)
+    try:
+        hosts = subprocess.check_output("find /var/lib/neutron/dhcp -name host -exec cat {} \;", shell=True)
+    except subprocess.CalledProcessError as e:
+        print(e)
+        return
     for line in hosts.split('\n'):
         if not line.startswith('fa:16'):
             continue
