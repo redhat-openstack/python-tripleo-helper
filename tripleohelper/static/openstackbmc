@@ -89,10 +89,13 @@ class OpenStackBmc(bmc.Bmc):
         return retval
 
     def set_boot_device(self, bootdevice):
-        return  # NOTE(Goneri): we use an ipxe image
         server = self.novaclient.servers.get(self.instance)
+        for image in self.novaclient.images.list():
+            if image.name == 'ipxe.usb':
+                break
         if bootdevice == 'network':
             self.novaclient.servers.set_meta_item(server, 'libvirt:pxe-first', '1')
+            server.rebuild(image.id)
         else:
             self.novaclient.servers.set_meta_item(server, 'libvirt:pxe-first', '')
         self.log('Set boot device to', bootdevice)
