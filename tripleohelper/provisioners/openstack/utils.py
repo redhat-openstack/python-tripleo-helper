@@ -14,12 +14,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import keystoneauth1.exceptions.connection
 from keystoneauth1 import loading as ks_loading
 import keystoneauth1.session
 import neutronclient.v2_0
 from novaclient import client as nova_client
 
 import logging
+import time
 
 LOG = logging.getLogger('tripleohelper')
 
@@ -67,7 +69,16 @@ def get_keypair_id(nova_api, keypair_name):
 
 
 def get_network_id(nova_api, network_name):
-    networks = nova_api.networks.list()
+    # NOTE(Goneri): we have a lot of temporary failure with keystone
+    # this is an attempt to reduce them.
+    networks = None
+    for _ in range(100):
+        try:
+            networks = nova_api.networks.list()
+        except keystoneauth1.exceptions.connection.ConnectFailure:
+            time.sleep(1)
+        else:
+            break
     return _get_id_by_attr(networks, 'label', network_name)
 
 
