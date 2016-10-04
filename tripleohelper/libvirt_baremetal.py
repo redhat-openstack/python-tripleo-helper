@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2016 Red Hat, Inc
@@ -14,23 +15,18 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import os.path
-import pkg_resources
-
-import tripleohelper
+import tripleohelper.baremetal
 
 
-def pkg_data_filename(resource_name, filename=None):
-    """Returns the path of a file installed along the package
-    """
-    resource_filename = pkg_resources.resource_filename(
-        tripleohelper.__name__,
-        resource_name
-    )
-    if filename is not None:
-        resource_filename = os.path.join(resource_filename, filename)
-    return resource_filename
+class Baremetal(tripleohelper.baremetal.Baremetal):
+    def __init__(self):
+        pass
 
 
-def protect_password(password):
-    return '"' + password.replace('"', '\\"') + '"'
+class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
+    def __init__(self, hypervisor=None, **kargs):
+        super(BaremetalFactory, self).__init__(**kargs)
+        self.hypervisor = hypervisor
+
+    def shutdown_nodes(self, undercloud):
+        self.hypervisor.run('virsh list --name|grep "baremetalbrbm"|xargs -r -n 1 virsh destroy')

@@ -228,13 +228,9 @@ class Server(object):
                                        self._key_filename,
                                        self.via_ip)
 
-    def fetch_image(self, path, dest, checksum=None, user='root'):
+    def fetch_image(self, path, dest, user='root'):
         """Store in the user home directory an image from a remote location.
         """
-        if checksum:
-            self.create_file("%s.md5" % dest, '%s %s\n' % (checksum, dest))
-            if self.run('md5sum -c %s.md5' % dest, user=user, ignore_error=True)[1] == 0:
-                return
         self.run('curl -s -o %s %s' % (dest, path), user=user)
 
     def install_base_packages(self):
@@ -261,6 +257,10 @@ class Server(object):
         :param allow_reboot: If True and if a new kernel has been installed,
         the system will be rebooted
         """
+        # NOTE(Goneri): my doing that we avoid where pytz is missing (WTF?!).
+        self.run('yum clean all')
+        self.run('subscription-manager repos --list-enabled')
+        self.run('yum repolist')
         self.run('yum update -y --quiet', retry=3)
         # reboot if a new initrd has been generated since the boot
         if allow_reboot:

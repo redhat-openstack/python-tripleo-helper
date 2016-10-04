@@ -81,18 +81,21 @@ def test_clean_system(server):
     server.clean_system()
 
 expectation_yum_update = [
+    {'func': 'run', 'args': {'cmd': 'yum clean all'}},
+    {'func': 'run', 'args': {'cmd': 'subscription-manager repos --list-enabled'}},
+    {'func': 'run', 'args': {'cmd': 'yum repolist'}},
     {'func': 'run', 'args': {'cmd': 'yum update -y --quiet'}},
-    {'func': 'run', 'args': {'cmd': 'find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;'}},
 ]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_yum_update], indirect=['fake_sshclient'])
 def test_yum_update(server):
-    server.yum_update(allow_reboot=True)
+    server.yum_update()
 
 
-expectation_yum_update_with_reboot = [
-    {'func': 'run', 'args': {'cmd': 'yum update -y --quiet'}},
+expectation_yum_update_with_reboot = []
+expectation_yum_update_with_reboot += expectation_yum_update
+expectation_yum_update_with_reboot += [
     {'func': 'run', 'args': {'cmd': 'find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;'}},
 ]
 
@@ -136,12 +139,10 @@ def test_enable_user(server_without_root_enabled):
     server_without_root_enabled.enable_user('root')
 
 expectation_fetch_image = [
-    {'func': 'create_file', 'args': {'path': 'somewhere.md5', 'content': 'this_is_a_Bad_md5 somewhere\n'}},
-    {'func': 'run', 'args': {'cmd': 'md5sum -c somewhere.md5'}, 'res': ('md5sum: somewhere: no properly formatted MD5 checksum lines found', 1)},
     {'func': 'run', 'args': {'cmd': 'curl -s -o somewhere http://host/image'}},
 ]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_fetch_image], indirect=['fake_sshclient'])
 def test_fetch_image(server):
-    server.fetch_image('http://host/image', 'somewhere', 'this_is_a_Bad_md5')
+    server.fetch_image('http://host/image', 'somewhere')

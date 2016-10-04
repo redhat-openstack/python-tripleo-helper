@@ -23,13 +23,15 @@ expectation_start = [
     {'func': 'run', 'args': {'cmd': 'ifup eth1'}}
 ]
 
-expectation_load_instackenv = expectation_start
+expectation_load_instackenv = []
+expectation_load_instackenv += expectation_start
 expectation_load_instackenv += [
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal import --json instackenv.json'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; cat /home/stack/instackenv.json |jq -M ".|length"'}, 'res': ('4\n', 0)},
+    {'func': 'run', 'args': {'cmd': '. stackrc; jq -M ".nodes|length" /home/stack/instackenv.json'}, 'res': ('0\n', 0)},
+    {'func': 'run', 'args': {'cmd': '. stackrc; jq -M ".|length" /home/stack/instackenv.json'}, 'res': ('4\n', 0)},
     {'func': 'run', 'args': {'cmd': '. stackrc; ironic node-list|grep -c "power off"'}, 'res': ('4\n', 0)},
-    {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal configure boot'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; ironic node-list --fields uuid|awk \'/-.*-/ {print $2}\''}}]
+    {'func': 'run', 'args': {'cmd': ". stackrc; ironic node-list --fields uuid|awk '/-.*-/ {print $2}'"}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal configure boot'}}]
 
 
 @pytest.mark.parametrize('fake_sshclient', [expectation_load_instackenv], indirect=['fake_sshclient'])

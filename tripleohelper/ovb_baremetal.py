@@ -16,7 +16,6 @@
 # under the License.
 
 import concurrent.futures
-import json
 import logging
 
 import tripleohelper.baremetal
@@ -181,11 +180,6 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
                 })
         self.bmc.ssh_pool.stop_all()
 
-    def load_instackenv_content(self, undercloud):
-        instackenv_content = undercloud.get_file_content(
-            'instackenv.json', user='stack')
-        return json.loads(instackenv_content)
-
     def reload_environment(self, undercloud):
         servers = {}
         for s in self.nova_api.servers.list():
@@ -244,12 +238,3 @@ class BaremetalFactory(tripleohelper.baremetal.BaremetalFactory):
         """
         for bm_node in self.nodes:
             bm_node.pxe_netboot(filename)
-
-    def set_ironic_uuid(self, uuid_list):
-        """Map a list of Ironic UUID to BM nodes.
-        """
-        # TODO(Gonéri): ensure we adjust the correct node
-        i = iter(self.nodes)
-        for uuid in uuid_list:
-            node = next(i)
-            node.uuid = uuid

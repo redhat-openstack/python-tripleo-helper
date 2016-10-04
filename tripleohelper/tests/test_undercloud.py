@@ -22,11 +22,9 @@ import tripleohelper.undercloud
 files = {
     'overcloud-full': {
         'image_path': 'http://192.168.1.2/mburns/8.0/2015-12-03.1/images/overcloud-full.tar',
-        'checksum': 'e88968c81703fbcf6dbc8623997f6a84'
     },
     'deploy-ramdisk-ironic': {
         'image_path': 'http://192.168.1.2/mburns/latest-8.0-images/deploy-ramdisk-ironic.tar',
-        'checksum': '5c8fd42deb34831377f0bf69fbe71f4b'
     }
 }
 
@@ -103,7 +101,7 @@ expectation_configure = [
 expectation_configure += tripleohelper.tests.test_server.expectation_create_user
 expectation_configure += tripleohelper.tests.test_server.expectation_install_base_packages
 expectation_configure += tripleohelper.tests.test_server.expectation_clean_system
-expectation_configure += tripleohelper.tests.test_server.expectation_yum_update
+expectation_configure += tripleohelper.tests.test_server.expectation_yum_update_with_reboot
 expectation_configure += [{'func': 'run', 'args': {'cmd': 'uname -a'}}]
 expectation_configure += tripleohelper.tests.test_server.expectation_install_osp
 expectation_configure += expectation_set_selinux
@@ -121,17 +119,9 @@ def test_configure(undercloud):
 
 
 expectation_fetch_overcloud_images = [
-    {'func': 'create_file', 'args': {
-        'path': '/home/stack/deploy-ramdisk-ironic.tar.md5',
-        'content': '5c8fd42deb34831377f0bf69fbe71f4b /home/stack/deploy-ramdisk-ironic.tar\n'
-    }},
-    {'func': 'run', 'args': {'cmd': '. stackrc; md5sum -c /home/stack/deploy-ramdisk-ironic.tar.md5'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; curl -s -o /home/stack/deploy-ramdisk-ironic.tar http://192.168.1.2/mburns/latest-8.0-images/deploy-ramdisk-ironic.tar'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; tar xf /home/stack/deploy-ramdisk-ironic.tar'}},
-    {'func': 'create_file', 'args': {
-        'path': '/home/stack/overcloud-full.tar.md5',
-        'content': 'e88968c81703fbcf6dbc8623997f6a84 /home/stack/overcloud-full.tar\n'
-    }},
-    {'func': 'run', 'args': {'cmd': '. stackrc; md5sum -c /home/stack/overcloud-full.tar.md5'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; curl -s -o /home/stack/overcloud-full.tar http://192.168.1.2/mburns/8.0/2015-12-03.1/images/overcloud-full.tar'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; tar xf /home/stack/overcloud-full.tar'}},
 ]
 
@@ -155,8 +145,10 @@ def test_overcloud_image_upload(undercloud):
 
 expectation_load_instackenv = [
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal import --json instackenv.json'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; cat /home/stack/instackenv.json |jq -M ".|length"'}, 'res': ('4\n', 0)},
+    {'func': 'run', 'args': {'cmd': '. stackrc; jq -M ".nodes|length" /home/stack/instackenv.json'}, 'res': ('0\n', 0)},
+    {'func': 'run', 'args': {'cmd': '. stackrc; jq -M ".|length" /home/stack/instackenv.json'}, 'res': ('4\n', 0)},
     {'func': 'run', 'args': {'cmd': '. stackrc; ironic node-list|grep -c "power off"'}, 'res': ('4\n', 0)},
+    {'func': 'run', 'args': {'cmd': ". stackrc; ironic node-list --fields uuid|awk '/-.*-/ {print $2}'"}},
     {'func': 'run', 'args': {'cmd': '. stackrc; openstack baremetal configure boot'}},
 ]
 

@@ -77,7 +77,6 @@ class Undercloud(Server):
                 self.fetch_image(
                     path=files[name]['image_path'],
                     dest='/home/stack/%s.tar' % name,
-                    checksum=files[name].get('checksum'),
                     user='stack')
                 self.run('tar xf /home/stack/%s.tar' % name,
                          user='stack')
@@ -106,8 +105,21 @@ class Undercloud(Server):
         """
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack baremetal import --json instackenv.json', user='stack')
-        ironic_node_nbr = int(self.run('cat /home/stack/instackenv.json |jq -M ".|length"', user='stack')[0])
+        ironic_node_nbr = 0
+        count_cmd = 'jq -M "{filter}|length" /home/stack/instackenv.json'
+        # Nodes are either in the .nodes list or at the root of the document
+        for f in ['.nodes', '.']:
+            try:
+                ironic_node_nbr = int(
+                    self.run(count_cmd.format(filter=f), user='stack')[0])
+            except ValueError:
+                pass
+            if ironic_node_nbr > 0:
+                break
         self._wait_for_ironic_nodes(ironic_node_nbr)
+        # register association with the newly created ironic nodes and the
+        # existing barematal nodes in the factory
+        self.baremetal_factory.set_ironic_uuid(self.list_nodes())
         self.run('openstack baremetal configure boot', user='stack')
 
     def _wait_for_ironic_nodes(self, expected_nbr):

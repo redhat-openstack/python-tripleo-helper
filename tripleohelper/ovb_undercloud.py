@@ -150,6 +150,3 @@ WantedBy=multi-user.target
 
     def load_instackenv(self):
         super(OVBUndercloud, self).load_instackenv()
-        # register association with the newly created ironic nodes and the
-        # existing barematal nodes in the factory
-        self.baremetal_factory.set_ironic_uuid(self.list_nodes())

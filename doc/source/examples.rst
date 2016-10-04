@@ -27,6 +27,7 @@ OpenStack Virtual Baremetal)::
         keypair: DCI
         security-groups:
             - ssh
+            - rhos-mirror-user
     ssh:
         private_key: /home/goneri/.ssh/DCI/id_rsa
     # the repositories to enable

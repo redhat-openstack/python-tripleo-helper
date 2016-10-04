@@ -12,7 +12,7 @@ export REG_METHOD=portal
 export REG_USER="{{ rhsm.login }}"
 export REG_PASSWORD="{{ rhsm.password }}"
 export REG_POOL_ID=""
-export REG_REPOS="rhel-7-server-rpms rhel-7-server-extras-rpms rhel-ha-for-rhel-7-server-rpms rhel-7-server-optional-rpms rhel-7-server-openstack-7.0-rpms"
+export REG_REPOS="{{ rhsm.repositories|join(' ') }}"
 {%endif %}
 
 export NODE_COUNT={{ node.count | default('3') }}
