@@ -18,13 +18,7 @@ For example:
 At this point, you can deploy your OpenStack on an existing public
 OpenStack (OVB).
 
-The documentation is available online here:
-[http://python-tripleo-helper.readthedocs.org/en/latest/](http://python-tripleo-helper.readthedocs.org/en/latest/).
-
-Installation
-------------
-
-[http://python-tripleo-helper.readthedocs.org/en/latest/installation.html](installation).
+Documentation: http://python-tripleo-helper.readthedocs.org/en/latest
 
 Command
 --------
