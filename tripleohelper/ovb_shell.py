@@ -165,7 +165,6 @@ def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step)
             neutron=neutron,
             provisioner=config['provisioner'],
             ip='192.0.2.240',
-            flavor='m1.large',
             floating_ip=config['undercloud'].get('floating_ip'))
 
         undercloud.create_stack_user()

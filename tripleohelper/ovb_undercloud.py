@@ -38,7 +38,7 @@ class OVBUndercloud(Undercloud):
         Undercloud.__init__(self, **kwargs)
 
     def start(self, nova_api=None, neutron=None, provisioner=None, ip=None,
-              flavor='m1.small', floating_ip=None, **kwargs):
+              floating_ip=None, **kwargs):
         body_value = {
             "port": {
                 "admin_state_up": True,
@@ -52,7 +52,10 @@ class OVBUndercloud(Undercloud):
         response = neutron.create_port(body=body_value)
         provision_port_id = response['port']['id']
         image_id_to_boot_from = os_utils.get_image_id(nova_api, provisioner['image']['name'])
-        flavor_id = os_utils.get_flavor_id(nova_api, flavor)
+        flavor_name = provisioner.get('undercloud_flavor')
+        if not flavor_name:
+            flavor_name = provisioner.get('flavor', 'm1.xlarge')
+        flavor_id = os_utils.get_flavor_id(nova_api, flavor_name)
         keypair_id = os_utils.get_keypair_id(nova_api, provisioner['keypair'])
         network_id = os_utils.get_network_id(nova_api, provisioner['network'])
         nics = [{'net-id': network_id}, {'port-id': provision_port_id}]

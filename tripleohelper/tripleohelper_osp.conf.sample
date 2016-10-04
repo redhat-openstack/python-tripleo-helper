@@ -12,7 +12,8 @@ provisioner:
         name: RHEL 7.2 x86_64
 # optional, parameter to declare the name of the admin user of the image,
 #        user:
-    flavor: m1.hypervisor
+#    flavor: m1.large
+#    undercloud_flavor: m1.xlarge
 #    network: private
     keypair: DCI
     security-groups:
