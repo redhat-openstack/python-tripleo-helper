@@ -152,6 +152,7 @@ def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step)
     sess = os_utils.ks_session(os_auth_url, os_username, os_password, os_project_id)
     neutron = os_utils.build_neutron_client(sess)
     nova_api = os_utils.build_nova_api(sess)
+    provisioner = config['provisioner']
 
     print('step: %s' % step)
     if step == 'provisioning':
@@ -206,7 +207,11 @@ def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step)
             'pool_id': config['rhsm'].get('pool_id')})
         undercloud.configure(config['undercloud']['repositories'])
         baremetal_factory.shutdown_nodes(undercloud)
-        undercloud_conf = """
+        undercloud_config = provisioner.get('undercloud_config')
+        if undercloud_config:
+            undercloud_conf = open(undercloud_config, 'r').read()
+        else:
+            undercloud_conf = """
 [DEFAULT]
 local_ip = 192.0.2.240/24
 local_interface = eth1
