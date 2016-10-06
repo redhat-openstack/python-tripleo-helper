@@ -19,6 +19,7 @@ from paramiko import ssh_exception
 
 import io
 import logging
+import os
 import select
 import socket
 import time
@@ -253,6 +254,28 @@ class SshClient(object):
         if unix_mode:
             sftp.chmod(remote_path, unix_mode)
 
+    def send_dir(self, local_path, remote_path):
+        """Send a directory to the remote host.
+        :param local_path: the local path of the directory
+        :type local_path: str
+        :param remote_path: the remote path of the directory
+        :type remote_path: str
+        :return: the file attributes
+        :rtype: paramiko.sftp_attr.SFTPAttributes
+        """
+        directory, parent = os.path.split(local_path)
+        os.chdir(directory)
+        self._check_started()
+        sftp = paramiko.SFTPClient.from_transport(self._transport)
+        for walker in os.walk(parent):
+            try:
+                sftp.mkdir(os.path.join(remote_path, walker[0]))
+            except Exception:
+                LOG.info('directory %s exists' % walker[0])
+            for file in walker[2]:
+                sftp.put(os.path.join(walker[0], file),
+                         os.path.join(remote_path, walker[0], file))
+
     def open(self, filename, mode='r'):
         self._check_started()
         sftp = paramiko.SFTPClient.from_transport(self._transport)
@@ -328,6 +351,10 @@ class PoolSshClient(object):
     def send_file(self, user, local_path, remote_path, unix_mode=None):
         self._check_ssh_client(user)
         return self._ssh_clients[user].send_file(local_path, remote_path, unix_mode)
+
+    def send_dir(self, user, local_path, remote_path):
+        self._check_ssh_client(user)
+        return self._ssh_clients[user].send_dir(local_path, remote_path)
 
     def open(self, user, filename, mode='r'):
         self._check_ssh_client(user)

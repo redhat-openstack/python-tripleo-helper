@@ -106,6 +106,12 @@ class Server(object):
         self.enable_user(user)
         return self.ssh_pool.send_file(user, local_path, remote_path, unix_mode=unix_mode)
 
+    def send_dir(self, local_path, remote_path, user='root'):
+        """Upload a directory on the remote host.
+        """
+        self.enable_user(user)
+        return self.ssh_pool.send_dir(user, local_path, remote_path)
+
     def open(self, filename, mode='r', user='root'):
         self.enable_user(user)
         return self.ssh_pool.open(user, filename, mode)

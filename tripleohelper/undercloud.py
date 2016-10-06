@@ -17,6 +17,7 @@
 import logging
 import re
 import time
+import yaml
 
 from tripleohelper.server import Server
 
@@ -131,6 +132,15 @@ class Undercloud(Server):
         self.add_environment_file(user='stack', filename='stackrc')
         self.run('openstack baremetal introspection bulk start', user='stack')
 
+    def manage_overcloud_templates(self, templates):
+        if templates:
+            self.send_dir(templates, "/home/stack", user='stack')
+        else:
+            self.create_file(
+                '/home/stack/network-environment.yaml',
+                yaml.dump({'parameter_defaults': {'DnsServers': ['8.8.8.8', '8.8.4.4']}}),
+                user='stack')
+
     def _prepare_o_o_deploy_command(self, environments=[], **kwargs):
         args = {
             'control_scale': 0,
@@ -198,14 +208,15 @@ class Undercloud(Server):
         self.add_environment_file(user='stack', filename='stackrc')
         self.run(command, user='stack')
 
-    def start_overcloud_deploy(self, **kwargs):
+    def start_overcloud_deploy(self, deploy_command=None, **kwargs):
         # if ipxe is frozen, the VM will stay running.
         # https://bugzilla.redhat.com/show_bug.cgi?id=1310778
         self.baremetal_factory.shutdown_nodes(self)
 
         self.add_environment_file(user='stack', filename='stackrc')
-        o_o_deploy_command = self._prepare_o_o_deploy_command(**kwargs)
-        self.run(o_o_deploy_command, user='stack')
+        if not deploy_command:
+            deploy_command = self._prepare_o_o_deploy_command(**kwargs)
+        self.run(deploy_command, user='stack')
         self.run('test -f overcloudrc', user='stack')
 
     def rhosp_version(self):

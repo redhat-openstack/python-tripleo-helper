@@ -16,6 +16,7 @@
 # under the License.
 
 import click
+import os
 import time
 import yaml
 
@@ -255,17 +256,24 @@ undercloud_admin_vip = 192.0.2.201
 
 #        undercloud.start_overcloud_inspector()
         time.sleep(60)
-        undercloud.create_file(
-            '/home/stack/network-environment.yaml',
-            yaml.dump({'parameter_defaults': {'DnsServers': ['8.8.8.8', '8.8.4.4']}}),
-            user='stack')
-        undercloud.start_overcloud_deploy(
-            control_scale=1,
-            compute_scale=1,
-            control_flavor='control',
-            compute_flavor='compute',
-            environments=[
-                '/home/stack/network-environment.yaml'])
+        provisioner = config['provisioner']
+        templates = provisioner.get('heat_templates_dir')
+        undercloud.manage_overcloud_templates(templates)
+
+        deployment_file = provisioner.get('deployment_file')
+        if deployment_file:
+            remote_path = "/home/stack/%s" % os.path.basename(deployment_file)
+            undercloud.send_file(deployment_file, remote_path, user='stack',
+                                 unix_mode=0o755)
+            undercloud.start_overcloud_deploy(deploy_command=remote_path)
+        else:
+            undercloud.start_overcloud_deploy(
+                control_scale=1,
+                compute_scale=1,
+                control_flavor='control',
+                compute_flavor='compute',
+                environments=[
+                    '/home/stack/network-environment.yaml'])
 
         # create the public network
         undercloud.add_environment_file(

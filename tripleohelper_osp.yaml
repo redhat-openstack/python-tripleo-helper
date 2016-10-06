@@ -15,7 +15,12 @@ provisioner:
 #    flavor: m1.large
 #    undercloud_flavor: m1.xlarge
 #    use specific undercloud config file
+# optional, parameter to use a user define undercloud.conf
 #    undercloud_config: /home/user/undercloud.conf
+# optional, parameter to use user define templates dir
+#           should be use with a deployment file (bash script)
+#    heat_templates_dir: /home/user/templates
+#    deployment_file: /home/user/deploy.sh
 #    network: private
     keypair: DCI
     security-groups:
