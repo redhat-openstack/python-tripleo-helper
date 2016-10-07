@@ -63,7 +63,8 @@ setuptools.setup(
     ],
     entry_points={
         "console_scripts": [
-            "chainsaw-ovb = tripleohelper.ovb_shell:main"
+            "chainsaw-ovb = tripleohelper.ovb_shell:main",
+            "chainsaw-libvirt = tripleohelper.libvirt_shell:main"
         ],
     }
 )

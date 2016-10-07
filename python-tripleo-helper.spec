@@ -101,6 +101,7 @@ install -d %{buildroot}%{_bindir}
 %{python2_sitelib}/tripleohelper
 %{python2_sitelib}/*.egg-info
 %{_bindir}/chainsaw-ovb
+%{_bindir}/chainsaw-libvirt
 
 %if 0%{?with_python3}
 %files -n python3-tripleo-helper
@@ -108,6 +109,7 @@ install -d %{buildroot}%{_bindir}
 %{python3_sitelib}/tripleohelper
 %{python3_sitelib}/*.egg-info
 %{_bindir}/chainsaw-ovb
+%{_bindir}/chainsaw-libvirt
 %endif
 
 %changelog
