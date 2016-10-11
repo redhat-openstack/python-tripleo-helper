@@ -45,6 +45,7 @@ def cli(host0_ip, undercloud_ip, config_file, step):
     host0 = None
     vm_undercloud = None
 
+    print('step: %s' % step)
     logger.setup_logging()
     try:
         rhsm = config.get('rhsm')
