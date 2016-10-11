@@ -105,7 +105,7 @@ class OvbBmc(Server):
         os_utils.get_network_id(self.nova_api, 'provision_bob')
 
         self.send_file(pkg_data_filename('static', 'openstackbmc'), '/usr/local/bin/openstackbmc', unix_mode=0o755)
-        self.yum_install(['https://www.rdoproject.org/repos/rdo-release.rpm'])
+        self.yum_install(['https://repos.fedorapeople.org/repos/openstack/openstack-mitaka/rdo-release-mitaka-5.noarch.rpm'])
         self.yum_install(['python-novaclient', 'python-neutronclient', 'python-keystoneclient', 'python-pip', 'python2-oslo-utils', 'python-crypto'])
         self.run('pip install pyghmi')
 
