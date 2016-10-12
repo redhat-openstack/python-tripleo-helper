@@ -21,19 +21,25 @@ A Python library to drive a TripleO based installer
 Summary:        A Python library to drive a TripleO based installer
 %{?python_provide:%python_provide python2-tripleo-helper}
 
-BuildRequires:  python2-devel
-BuildRequires:  python-setuptools
-BuildRequires:  python-tox
+BuildRequires:  PyYAML
 BuildRequires:  libffi-devel
 BuildRequires:  openssl-devel
-
-Requires:       python-click
-Requires:       python-paramiko
+BuildRequires:  python-click
+BuildRequires:  python-futures
+BuildRequires:  python-jinja2
+BuildRequires:  python-neutronclient
+BuildRequires:  python-novaclient
+BuildRequires:  python-paramiko
+BuildRequires:  python-setuptools
+BuildRequires:  python-tox
+BuildRequires:  python2-devel
 Requires:       PyYAML
+Requires:       python-click
+Requires:       python-futures
 Requires:       python-jinja2
 Requires:       python-neutronclient
 Requires:       python-novaclient
-Requires:       python-futures
+Requires:       python-paramiko
 
 %description -n python2-tripleo-helper
 A Python library to drive a TripleO based installer
@@ -43,18 +49,22 @@ A Python library to drive a TripleO based installer
 Summary:        A Python library to drive a TripleO based installer
 %{?python_provide:%python_provide python3-tripleo-helper}
 
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-BuildRequires:  python-tox
 BuildRequires:  libffi-devel
 BuildRequires:  openssl-devel
-
-Requires:       python3-click
-Requires:       python3-paramiko
+BuildRequires:  python-tox
+BuildRequires:  python3-click
+BuildRequires:  python3-devel
+BuildRequires:  python3-jinja2
+BuildRequires:  python3-neutronclient
+BuildRequires:  python3-novaclient
+BuildRequires:  python3-paramiko
+BuildRequires:  python3-setuptools
 Requires:       python3-PyYAML
+Requires:       python3-click
 Requires:       python3-jinja2
 Requires:       python3-neutronclient
 Requires:       python3-novaclient
+Requires:       python3-paramiko
 
 %description -n python3-tripleo-helper
 A Python library to drive a TripleO based installer

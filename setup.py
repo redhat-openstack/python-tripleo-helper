@@ -46,7 +46,7 @@ setuptools.setup(
     long_description=_README_CONTENT,
     install_requires=_get_requirements(),
     url="https://github.com/redhat-openstack/python-tripleo-helper",
-    licence="Apache v2.0",
+    license="Apache v2.0",
     include_package_data=True,
     package_data={
         'tripleohelper': ['static/*', 'templates/*']
