@@ -46,7 +46,7 @@ def cli(host0_ip, undercloud_ip, config_file, step):
     vm_undercloud = None
 
     print('step: %s' % step)
-    logger.setup_logging()
+    logger.setup_logging(config_file=config.get('config_file'))
     try:
         rhsm = config.get('rhsm')
         host0 = tripleohelper.host0.Host0(

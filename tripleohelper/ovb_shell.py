@@ -146,7 +146,7 @@ def initialize_network(neutron):
                 type=click.Choice(['provisioning', 'undercloud', 'overcloud', 'cleanup']))
 def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step):
     config = yaml.load(config_file)
-    logger.setup_logging(config_file='/tmp/ovb.log')
+    logger.setup_logging(config_file=config.get('config_file'))
     undercloud = None
     baremetal_factory = None
 

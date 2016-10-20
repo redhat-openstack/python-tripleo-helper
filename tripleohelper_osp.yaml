@@ -4,6 +4,7 @@ rhsm:
     password: <rhn_password>
 # optional, use it only if you need to pin on a given pool
 #    pool_id: <pool_id>
+config_file: /var/log/tripleo-helper.log
 provisioner:
     type: openstack
 # prefix to add the VM if you want to do 'libvirt on Nova'
