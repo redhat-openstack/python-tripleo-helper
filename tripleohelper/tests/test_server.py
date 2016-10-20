@@ -96,7 +96,9 @@ def test_yum_update(server):
 expectation_yum_update_with_reboot = []
 expectation_yum_update_with_reboot += expectation_yum_update
 expectation_yum_update_with_reboot += [
-    {'func': 'run', 'args': {'cmd': 'find /boot/ -anewer /proc/1/stat -name "initramfs*" -exec reboot \;'}},
+    {'func': 'run', 'args': {'cmd': 'grubby --set-default $(ls /boot/vmlinuz-*.x86_64|tail -1)'}},
+    {'func': 'run', 'args': {'cmd': 'grubby --default-kernel'}},
+    {'func': 'run', 'args': {'cmd': 'uname -r'}},
 ]
 
 
