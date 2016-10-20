@@ -49,7 +49,7 @@ setuptools.setup(
     license="Apache v2.0",
     include_package_data=True,
     package_data={
-        'tripleohelper': ['static/*', 'templates/*']
+        'tripleohelper': ['static/*', 'template/*']
     },
     classifiers=[
         "Environment :: Console",
