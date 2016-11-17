@@ -112,6 +112,7 @@ class SshClient(object):
             self.description = '[%s@%s]' % (self._user,
                                             self._hostname)
 
+        exception = None
         for i in range(60):
             try:
                 self._client.connect(
@@ -125,17 +126,20 @@ class SshClient(object):
             except (OSError,
                     TypeError,
                     ssh_exception.SSHException,
-                    ssh_exception.NoValidConnectionsError):
-                LOG.info('%s waiting for %s' % (self.description, connect_to))
-                # LOG.debug("exception: '%s'" % str(e))
+                    ssh_exception.NoValidConnectionsError) as e:
+                exception = e
+                LOG.info('%s waiting for %s: %s' %
+                         (self.description, connect_to, str(exception)))
                 time.sleep(1)
             else:
                 LOG.debug('%s connected' % self.description)
                 self._started = True
                 return
-        _error = ("unable to connect to ssh service on '%s'" % self._hostname)
+
+        _error = ("unable to connect to ssh service on '%s': %s" %
+                  (self._hostname, str(exception)))
         LOG.error(_error)
-        raise ssh_exception.SSHException(_error)
+        raise exception
 
     def _check_started(self):
         if not self._started:
