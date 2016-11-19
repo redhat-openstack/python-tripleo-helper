@@ -108,7 +108,7 @@ def test_yum_update_with_reboot(server):
 
 
 expectation_install_osp = [
-    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet yum-plugin-priorities python-tripleoclient python-rdomanager-oscplugin'}},
+    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet python-tripleoclient python-rdomanager-oscplugin'}},
 ]
 
 

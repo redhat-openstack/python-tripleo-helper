@@ -274,7 +274,7 @@ class Server(object):
     def install_osp(self):
         """Install the OSP distribution.
         """
-        self.yum_install(['yum-plugin-priorities', 'python-tripleoclient', 'python-rdomanager-oscplugin'])
+        self.yum_install(['python-tripleoclient', 'python-rdomanager-oscplugin'])
 
     def set_selinux(self, state):
         """Help to enable/disable SELinux on the host.
