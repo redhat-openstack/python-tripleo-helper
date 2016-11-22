@@ -87,6 +87,7 @@ class Host0(Server):
             virt_setup_template['rhsm'] = {
                 'login': rhsm.get('login'),
                 'password': rhsm.get('password', os.environ.get('RHN_PW')),
+                'pool_id': rhsm.get('pool_id', ''),
                 'repositories': [i['name'] for i in repositories if i['type'] == 'rhsm_channel']
             }
         virt_setup_env = template.render(virt_setup_template)

@@ -11,7 +11,7 @@ export NODE_DIST=rhel7
 export REG_METHOD=portal
 export REG_USER="{{ rhsm.login }}"
 export REG_PASSWORD="{{ rhsm.password }}"
-export REG_POOL_ID=""
+export REG_POOL_ID="{{ rhsm.pool_id | default('') }}"
 export REG_REPOS="{{ rhsm.repositories|join(' ') }}"
 {%endif %}
 
