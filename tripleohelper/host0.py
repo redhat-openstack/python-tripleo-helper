@@ -38,7 +38,6 @@ class Host0(Server):
             self.rhsm_register(rhsm)
         if repositories is not None:
             self.enable_repositories(repositories)
-        self.install_nosync()
         self.create_stack_user()
         self.deploy_hypervisor()
 

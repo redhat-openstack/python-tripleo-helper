@@ -34,7 +34,6 @@ class Undercloud(Server):
         """Prepare the system to be ready for an undercloud installation.
         """
         self.enable_repositories(repositories)
-        self.install_nosync()
         self.create_stack_user()
         self.install_base_packages()
         self.clean_system()

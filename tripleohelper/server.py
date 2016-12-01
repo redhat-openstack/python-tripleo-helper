@@ -50,7 +50,6 @@ class Server(object):
             'rhel-7-server-rpms',
             'rhel-7-server-optional-rpms',
             'rhel-7-server-extras-rpms']
-        self.nosync_rpm = 'https://kojipkgs.fedoraproject.org/packages/nosync/1.0/1.el7/x86_64/nosync-1.0-1.el7.x86_64.rpm'
 
     def enable_user(self, user):
         """Enable the root account on the remote host.
@@ -150,20 +149,6 @@ class Server(object):
         :param packages: ist of packages to remove.
         """
         return self.run('yum remove -y --quiet ' + ' '.join(packages))
-
-    def install_nosync(self):
-        """Install and unable lib nosync.
-
-        Install the nosync library to reduce the number of fsync() call and
-        speed up the installation.
-        """
-        _, rc = self.yum_install(
-            [self.nosync_rpm],
-            ignore_error=True)
-        if rc == 0:
-            self.run('echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload')
-        else:
-            LOG.debug('nosync installation has failed.')
 
     def rhsm_register(self, rhsm):
         """Register the host on the RHSM.

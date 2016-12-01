@@ -94,9 +94,7 @@ expectation_configure = [
                                      "'--disable=*' "
                                      "--enable=rhel-7-server-rpms "
                                      "--enable=rhel-7-server-optional-rpms "
-                                     "--enable=rhel-7-server-extras-rpms")}},
-    {'func': 'run', 'args': {'cmd': 'yum install -y --quiet bob'}},
-    {'func': 'run', 'args': {'cmd': 'echo /usr/lib64/nosync/nosync.so > /etc/ld.so.preload'}}]
+                                     "--enable=rhel-7-server-extras-rpms")}}]
 
 expectation_configure += tripleohelper.tests.test_server.expectation_create_user
 expectation_configure += tripleohelper.tests.test_server.expectation_install_base_packages
@@ -111,7 +109,6 @@ expectation_configure += expectation_fix_hostname
 @pytest.mark.parametrize('fake_sshclient', [expectation_configure], indirect=['fake_sshclient'])
 def test_configure(undercloud):
     undercloud.rhsm_active = True
-    undercloud.nosync_rpm = 'bob'
     repositories = [
         {'type': 'rhsm_channel', 'name': 'rhel-7-server-rpms'}
     ]
