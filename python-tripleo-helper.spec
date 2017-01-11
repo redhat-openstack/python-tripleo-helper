@@ -39,7 +39,7 @@ Requires:       python-futures
 Requires:       python-jinja2
 Requires:       python-neutronclient
 Requires:       python-novaclient
-Requires:       python-paramiko
+Requires:       python-paramiko >= 1.16
 
 %description -n python2-tripleo-helper
 A Python library to drive a TripleO based installer
@@ -64,7 +64,7 @@ Requires:       python3-click
 Requires:       python3-jinja2
 Requires:       python3-neutronclient
 Requires:       python3-novaclient
-Requires:       python3-paramiko
+Requires:       python3-paramiko >= 1.16
 
 %description -n python3-tripleo-helper
 A Python library to drive a TripleO based installer

@@ -1,5 +1,5 @@
 click
-paramiko
+paramiko>=1.16
 python-neutronclient
 python-novaclient
 PyYAML>=3.0, <4.0
