@@ -10,7 +10,7 @@ Summary:        A Python library to drive a TripleO based installer
 License:        ASL 2.0
 URL:            http://softwarefactory-project.io/r/python-tripleo-helper
 
-Source0:        python-tripleo-helper-%{version}.tgz
+Source0:        tripleo-helper-%{version}.tar.gz
 
 BuildArch:      noarch
 
@@ -71,8 +71,8 @@ A Python library to drive a TripleO based installer
 %endif
 
 
-%prep -a
-%setup -qc
+%prep
+%autosetup -n tripleo-helper-%{version}
 
 
 %build
