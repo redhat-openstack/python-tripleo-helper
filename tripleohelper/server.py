@@ -82,6 +82,9 @@ class Server(object):
             elif 'Please login as the user "fedora" rather than the user "root"' in result:
                 image_user = 'fedora'
                 _root_ssh_client.stop()
+            elif 'Please login as the user "centos" rather than the user "root"' in result:
+                image_user = 'centos'
+                _root_ssh_client.stop()
 
             if image_user:
                 self.enable_user(image_user)
@@ -144,7 +147,6 @@ class Server(object):
 
     def yum_remove(self, packages):
         """Remove some packages from a remote host.
-
 
         :param packages: ist of packages to remove.
         """
@@ -216,7 +218,8 @@ class Server(object):
     def fetch_image(self, path, dest, user='root'):
         """Store in the user home directory an image from a remote location.
         """
-        self.run('curl -s -o %s %s' % (dest, path), user=user)
+        self.run('test -f %s || curl -L -s -o %s %s' % (dest, dest, path),
+                 user=user, ignore_error=True)
 
     def install_base_packages(self):
         """Install some extra packages.
@@ -242,9 +245,9 @@ class Server(object):
         :param allow_reboot: If True and if a new kernel has been installed,
         the system will be rebooted
         """
-        # NOTE(Goneri): my doing that we avoid where pytz is missing (WTF?!).
         self.run('yum clean all')
-        self.run('subscription-manager repos --list-enabled')
+        self.run('test -f /usr/bin/subscription-manager && subscription-manager repos --list-enabled',
+                 ignore_error=True)
         self.run('yum repolist')
         self.run('yum update -y --quiet', retry=3)
         # reboot if a new initrd has been generated since the boot

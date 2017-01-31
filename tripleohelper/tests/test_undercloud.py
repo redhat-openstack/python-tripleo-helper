@@ -116,9 +116,9 @@ def test_configure(undercloud):
 
 
 expectation_fetch_overcloud_images = [
-    {'func': 'run', 'args': {'cmd': '. stackrc; curl -s -o /home/stack/deploy-ramdisk-ironic.tar http://192.168.1.2/mburns/latest-8.0-images/deploy-ramdisk-ironic.tar'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; test -f /home/stack/deploy-ramdisk-ironic.tar || curl -L -s -o /home/stack/deploy-ramdisk-ironic.tar http://192.168.1.2/mburns/latest-8.0-images/deploy-ramdisk-ironic.tar'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; tar xf /home/stack/deploy-ramdisk-ironic.tar'}},
-    {'func': 'run', 'args': {'cmd': '. stackrc; curl -s -o /home/stack/overcloud-full.tar http://192.168.1.2/mburns/8.0/2015-12-03.1/images/overcloud-full.tar'}},
+    {'func': 'run', 'args': {'cmd': '. stackrc; test -f /home/stack/overcloud-full.tar || curl -L -s -o /home/stack/overcloud-full.tar http://192.168.1.2/mburns/8.0/2015-12-03.1/images/overcloud-full.tar'}},
     {'func': 'run', 'args': {'cmd': '. stackrc; tar xf /home/stack/overcloud-full.tar'}},
 ]
 
@@ -179,3 +179,13 @@ expectation_start_overcloud = [
 @pytest.mark.parametrize('fake_sshclient', [expectation_start_overcloud], indirect=['fake_sshclient'])
 def test_start_overcloud_deploy(undercloud):
     undercloud.start_overcloud_deploy(control_scale=1, compute_scale=1)
+
+
+expectation_nova_version = [
+    {'func': 'run', 'args': {'cmd': 'nova-manage --version'}, 'res': ('14.0.4\n', 0)},
+]
+
+
+@pytest.mark.parametrize('fake_sshclient', [expectation_nova_version], indirect=['fake_sshclient'])
+def test_nova_version(undercloud):
+    undercloud.nova_version()

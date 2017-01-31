@@ -15,7 +15,6 @@
 # under the License.
 
 import logging
-import re
 import time
 import yaml
 
@@ -28,7 +27,7 @@ class Undercloud(Server):
     def __init__(self, **kwargs):
         self.baremetal_factory = None
         Server.__init__(self, **kwargs)
-        self._rhosp_version = None
+        self._nova_version = None
 
     def configure(self, repositories):
         """Prepare the system to be ready for an undercloud installation.
@@ -230,10 +229,10 @@ class Undercloud(Server):
         self.run(deploy_command, user='stack')
         self.run('test -f overcloudrc', user='stack')
 
-    def rhosp_version(self):
-        if self._rhosp_version:
-            return self._rhosp_version
-        r = self.run('yum info rhosp-director-images')
-        raw_version = re.search('Version\ +:\ +([\w\.]+)', r[0]).group(1)
-        self._rhosp_version = float(raw_version.rstrip())
-        return self.rhosp_version()
+    def nova_version(self):
+        if self._nova_version:
+            return self._nova_version
+        nova_version = self.run('nova-manage --version')[0].split(".")[0]
+        # NOTE: before liberty, versions were year-release-version
+        # since liberty there is a major 2 digit version for each release
+        return 11 if len(str(nova_version)) == 4 else nova_version

@@ -206,10 +206,11 @@ def cli(os_auth_url, os_username, os_password, os_project_id, config_file, step)
         undercloud.baremetal_factory = baremetal_factory
 
     if step == 'undercloud':
-        undercloud.rhsm_register({
-            'login': config['rhsm']['login'],
-            'password': config['rhsm'].get('password'),
-            'pool_id': config['rhsm'].get('pool_id')})
+        if 'rhsm' in config:
+            undercloud.rhsm_register({
+                'login': config['rhsm']['login'],
+                'password': config['rhsm'].get('password'),
+                'pool_id': config['rhsm'].get('pool_id')})
         undercloud.configure(config['undercloud']['repositories'])
         baremetal_factory.shutdown_nodes(undercloud)
         undercloud_config = provisioner.get('undercloud_config')
@@ -245,7 +246,7 @@ undercloud_admin_vip = 192.0.2.201
             print('Run undercloud step first')
             exit(1)
         undercloud.fetch_overcloud_images(config.get('overcloud'))
-        if undercloud.rhosp_version() < 10:
+        if undercloud.nova_version() < 14:
             undercloud.patch_ironic_ramdisk()
         undercloud.overcloud_image_upload()
         undercloud.load_instackenv()

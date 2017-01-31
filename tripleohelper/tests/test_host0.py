@@ -21,7 +21,7 @@ expectation_build_undercloud = [
     {'func': 'run', 'args': {
         'cmd': 'sysctl net.ipv4.ip_forward=1'}},
     {'func': 'run', 'args': {
-        'cmd': 'curl -s -o /home/stack/guest_image.qcow2 http://host/guest_image_path.qcow2'}},
+        'cmd': 'test -f /home/stack/guest_image.qcow2 || curl -L -s -o /home/stack/guest_image.qcow2 http://host/guest_image_path.qcow2'}},
     {'func': 'run', 'args': {'cmd': 'LIBGUESTFS_BACKEND=direct virt-customize -a /home/stack/guest_image.qcow2 --run-command \'echo MTU="1400" >> /etc/sysconfig/network-scripts/ifcfg-eth0\''}},
     {'func': 'run', 'args': {'cmd': 'mkdir -p /home/stack/DIB'}},
     {'func': 'run', 'args': {'cmd': 'cp -v /etc/yum.repos.d/*.repo /home/stack/DIB'}},
@@ -68,7 +68,7 @@ expectation_deploy_hypervisor = [
     {'func': 'run', 'args': {'cmd': 'systemctl enable network'}},
     {'func': 'run', 'args': {'cmd': 'systemctl restart network'}},
     {'func': 'run', 'args': {'cmd': 'yum clean all'}},
-    {'func': 'run', 'args': {'cmd': 'subscription-manager repos --list-enabled'}},
+    {'func': 'run', 'args': {'cmd': 'test -f /usr/bin/subscription-manager && subscription-manager repos --list-enabled'}},
     {'func': 'run', 'args': {'cmd': 'yum repolist'}},
     {'func': 'run', 'args': {'cmd': 'yum update -y --quiet'}},
 ]

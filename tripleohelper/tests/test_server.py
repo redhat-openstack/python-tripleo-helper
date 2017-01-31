@@ -82,7 +82,7 @@ def test_clean_system(server):
 
 expectation_yum_update = [
     {'func': 'run', 'args': {'cmd': 'yum clean all'}},
-    {'func': 'run', 'args': {'cmd': 'subscription-manager repos --list-enabled'}},
+    {'func': 'run', 'args': {'cmd': 'test -f /usr/bin/subscription-manager && subscription-manager repos --list-enabled'}},
     {'func': 'run', 'args': {'cmd': 'yum repolist'}},
     {'func': 'run', 'args': {'cmd': 'yum update -y --quiet'}},
 ]
@@ -141,7 +141,7 @@ def test_enable_user(server_without_root_enabled):
     server_without_root_enabled.enable_user('root')
 
 expectation_fetch_image = [
-    {'func': 'run', 'args': {'cmd': 'curl -s -o somewhere http://host/image'}},
+    {'func': 'run', 'args': {'cmd': 'test -f somewhere || curl -L -s -o somewhere http://host/image'}},
 ]
 
 
